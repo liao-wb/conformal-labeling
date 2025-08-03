@@ -24,6 +24,21 @@ def set_seed(seed):
     return seed
 
 
+def split_logits_labels(model, dataloader, device):
+    logits_list = []
+    labels_list = []
+    with torch.no_grad():
+        for images, labels in tqdm(dataloader):
+            images = images.to(device)
+            labels = labels.to(device)
+            logits = model(images)
+            logits_list.append(logits)
+            labels_list.append(labels)
+        logits_list = torch.cat(logits_list).to(device)
+        labels_list = torch.cat(labels_list).to(device)
+    return logits_list, labels_list
+
+
 def build_dataset(dataset_name, batch_size=256, num_workers=8):
     if dataset_name == "cifar10":
         testset = datasets.CIFAR10(root=config.DATA_CIFAR10_ROOT, train=False, transform=config.TRANSFORM_CIFAR10_TEST)
