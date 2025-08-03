@@ -29,7 +29,8 @@ def build_dataset(dataset_name, root, batch_size=256, num_workers=8):
         testset = datasets.CIFAR10(root=configs.DATA_CIFAR10_ROOT, train=False, transform=configs.TRANSFORM_CIFAR10_TEST)
         # testloader = torch.utils.data.DataLoader(dataset=testset, batch_size=batch_size, num_workers=num_workers,
                                                  # shuffle=True)
-        cal_num = configs.CIFAR10_CALNUM, test_num = configs.CIFAR10_TESTNUM
+        cal_num = configs.CIFAR10_CALNUM
+        test_num = configs.CIFAR10_TESTNUM
         calibset, testset = torch.utils.data.random_split(testset, [cal_num, test_num])
         calibloader = torch.utils.data.DataLoader(dataset=calibset, batch_size=batch_size, num_workers=num_workers,
                                                   shuffle=True)
