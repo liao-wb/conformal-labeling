@@ -24,7 +24,7 @@ def set_seed(seed):
     return seed
 
 
-def build_dataset(dataset_name, device, batch_size=256, num_workers=8):
+def build_dataset(dataset_name, batch_size=256, num_workers=8):
     if dataset_name == "cifar10":
         testset = datasets.CIFAR10(root=config.DATA_CIFAR10_ROOT, train=False, transform=config.TRANSFORM_CIFAR10_TEST)
         # testloader = torch.utils.data.DataLoader(dataset=testset, batch_size=batch_size, num_workers=num_workers,
@@ -37,7 +37,7 @@ def build_dataset(dataset_name, device, batch_size=256, num_workers=8):
         testloader = torch.utils.data.DataLoader(dataset=testset, batch_size=batch_size, num_workers=num_workers,
                                                  shuffle=True)
 
-    return calibloader.to(device), testloader.to(device)
+    return calibloader, testloader
 
 
 def build_model(model_name, dataset_name, device):
