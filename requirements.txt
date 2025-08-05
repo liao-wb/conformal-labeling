@@ -1,0 +1,8 @@
+torch
+torchvision
+vllm
+numpy
+pandas
+tqdm
+matplotlib
+#jupyter                # Jupyter Notebook support
