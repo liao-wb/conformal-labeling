@@ -8,7 +8,7 @@ from tqdm import tqdm
 from vllm.sampling_params import GuidedDecodingParams
 import pickle
 import torch
-
+import pandas as pd
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="TinyLlama-1.1B")
@@ -22,8 +22,7 @@ args = parser.parse_args()
 
 batch_size = args.batch_size
 OUTPUT_FILE = f"output/{args.model}_{args.dataset}_results.json"
-"""model_path = f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
-dataset_path = f"/mnt/sharedata/ssd_large/common/datasets/{args.dataset}"""
+
 model_path =f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
 dataset_path = f"./dataset/{args.dataset}"
 
@@ -38,7 +37,7 @@ full_dataset = load_dataset('json', data_files={
 # vLLM Setup
 model = LLM(
     model=model_path,
-    gpu_memory_utilization=0.8, max_model_len=2048, guided_decoding_backend="xgrammar",
+    gpu_memory_utilization=0.8, max_model_len=10, guided_decoding_backend="xgrammar",
     tensor_parallel_size=args.tensor_parallel_size,
 
 )
@@ -69,11 +68,11 @@ test_dataset = [reformat(data) for data in test_dataset]
 # Initialize results (with proper population)
 results = {
     "question": [],
-    "predicted_answer": [],
-    "correct_answer": [],
+    "Y_hat": [],
+    "Y": [],
     "logits": [],
     "is_correct": [],
-    "predicted_confidence": [],
+    "confidence": [],
 }
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
@@ -123,23 +122,26 @@ for i in tqdm(range(0, indices, batch_size)):
         results['question'].append(input_texts[j])
         results['is_correct'].append(np.array(preds == labels[j]))
         results['logits'].append(logits)
-        results['predicted_answer'].append(preds)
-        results['correct_answer'].append(labels[j])
-        results["predicted_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
+        results['Y_hat'].append(preds)
+        results['Y'].append(labels[j])
+        results["confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
 
 output_dir = './result/'
-output_file = os.path.join(output_dir, 'prediction_results.pkl')
 
 # Create the directory if it doesn't exist
 os.makedirs(output_dir, exist_ok=True)  # `exist_ok=True` prevents errors if dir already exists
 
 # Save the pickle file
-with open(output_file, 'wb') as f:
-    pickle.dump(results, f)
+#with open(output_file, 'wb') as f:
+ #   pickle.dump(results, f)
 
-with open(f'./result/{args.dataset}_{args.model}_results.pkl', "wb") as f:
-    pickle.dump(results, f)
+#with open(f'./result/{args.dataset}_{args.model}_results.pkl', "wb") as f:
+#    pickle.dump(results, f)
 
-torch.cuda.empty_cache()
-del model
-del tokenizer
+df = pd.DataFrame(results)
+# Save as plain text (tab-separated for readability)
+df.to_csv(f"./result/{args.dataset}_{args.model}_results.txt", sep="\t", index=False)
+
+#torch.cuda.empty_cache()
+#del model
+#del tokenizer
