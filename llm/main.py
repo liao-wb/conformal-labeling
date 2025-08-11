@@ -11,8 +11,8 @@ import torch
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--model", type=str, default="Qwen3-32B")
-parser.add_argument("--dataset", type=str, default="mmlu")
+parser.add_argument("--model", type=str, default="TinyLlama-1.1B")
+parser.add_argument("--dataset", type=str, default="mathqa")
 parser.add_argument("--tensor_parallel_size", type=int, default=4)
 parser.add_argument("--batch_size", type=int, default=32)
 #parser.add_argument("--subject", type=str, default="college_biology")  # MMLU has different subjects
@@ -22,27 +22,32 @@ args = parser.parse_args()
 
 batch_size = args.batch_size
 OUTPUT_FILE = f"output/{args.model}_{args.dataset}_results.json"
-model_path = f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
-dataset_path = f"/mnt/sharedata/ssd_large/common/datasets/{args.dataset}"
+"""model_path = f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
+dataset_path = f"/mnt/sharedata/ssd_large/common/datasets/{args.dataset}"""
+model_path =f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
+dataset_path = f"./dataset/{args.dataset}"
 
 #if args.dataset == "mmlu":
  #   dataset_path =f"/mnt/sharedata/ssd_large/common/datasets/{args.dataset}/{args.subject}"
+full_dataset = load_dataset('json', data_files={
+    'train': './dataset/mathqa/train.json',
+    'test': './dataset/mathqa/test.json',
+    'validation': './dataset/mathqa/dev.json'  # dev.json is typically validation
+})
 
 # vLLM Setup
 model = LLM(
     model=model_path,
     gpu_memory_utilization=0.8, max_model_len=2048, guided_decoding_backend="xgrammar",
     tensor_parallel_size=args.tensor_parallel_size,
+
 )
 tokenizer = model.get_tokenizer()
 
-full_dataset = load_dataset(
-    path=f"/mnt/sharedata/ssd_large/common/datasets/{args.dataset}",
-)
 
 # Extract splits (first 10 examples each)
-test_dataset = full_dataset["test"].select(range(10))
-cal_dataset = full_dataset["validation"].select(range(10))
+test_dataset = full_dataset["test"]
+cal_dataset = full_dataset["validation"]
 label_list = ['A', 'B', 'C', 'D', 'E']
 
 def parse_options(options_str):
@@ -95,6 +100,7 @@ tokens_in_order = ['A', 'B', 'C', 'D', "E"]
 
 indices = len(cal_dataset)
 for i in tqdm(range(0, indices, batch_size)):
+    print(f"processing:{i}-th data")
     batch = cal_dataset[i:i + batch_size]
     input_texts, labels = [], []
 
@@ -120,9 +126,9 @@ for i in tqdm(range(0, indices, batch_size)):
         results['logits'].append(logits)
         results['predicted_answer'].append(preds)
         results['correct_answer'].append(labels[j])
-        results["predicted_confidence"] = torch.softmax(logits, dim=-1)[preds]
+        results["predicted_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
 
-with open(f'result/prediction_results.pkl', "wb") as f:
+with open(f'./result/prediction_results.pkl', "wb") as f:
     pickle.dump(results, f)
 
 torch.cuda.empty_cache()
