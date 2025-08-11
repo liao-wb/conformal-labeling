@@ -67,10 +67,8 @@ test_dataset = [reformat(data) for data in test_dataset]
 
 # Initialize results (with proper population)
 results = {
-    "question": [],
     "Yhat": [],
     "Y": [],
-    "logits": [],
     "is_correct": [],
     "confidence": [],
 }
@@ -119,9 +117,9 @@ for i in tqdm(range(0, indices, batch_size)):
         logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]
         preds = label_list[np.argmax(logits)]
 
-        results['question'].append(input_texts[j])
+        #results['question'].append(input_texts[j])
         results['is_correct'].append(np.array(preds == labels[j]))
-        results['logits'].append(logits)
+        #results['logits'].append(logits)
         results['Yhat'].append(preds)
         results['Y'].append(labels[j])
         results["confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())

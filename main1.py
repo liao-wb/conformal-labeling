@@ -41,7 +41,7 @@ std_budget_save_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
 
 for i, ds in enumerate(ds_list):
     print(ds)
-    data = pd.read_csv("./datasets/" + ds + '.csv')
+    data = pd.read_csv("./datasets/" + ds + '.csv', sep=",")
     print("haha")
     print(data.columns)
     Y = data["Y"].to_numpy()
