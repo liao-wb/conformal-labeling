@@ -27,10 +27,10 @@ def selection(y, y_hat, confidence, alpha, calib_ratio=0.5, random=True):
 
     if random:
         p_values = np.sum((test_score[:, None] > cal0_score), axis=-1) + np.random.rand(n_test) * (np.sum((test_score[:, None] == cal0_score), axis=-1) + 1)
-        p_values /= (1 + n_calib)
+        p_values /= (1 + n_calib_0)
     else:
         p_values = np.sum((test_score[:, None] >= cal0_score), axis=-1) + 1
-        p_values /= (1 + n_calib)
+        p_values /= (1 + n_calib_0)
 
     selection_indices = bh_procedure(p_values, alpha)
     y_reject, y_hat_reject = y_test[selection_indices], y_hat_test[selection_indices]

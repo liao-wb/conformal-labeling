@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=None, power_std_list=None,
+def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=None, power_std_list=None, column_name="FDR and Power",
                      figsize=(12, 6), max_cols=3):
     SMALL_SIZE = 18
     MEDIUM_SIZE = 18
@@ -43,7 +43,6 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
         ax.spines['top'].set_color('#D3D3D3')
 
         ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=6)
-
         if fdr_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(fdrs - fdr_std_list[i], 0, 1),
                           np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.5,
@@ -55,6 +54,12 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
                           np.clip(powers + power_std_list[i], 0, 1), alpha=0.5,
                           edgecolor='lightpink', facecolor='lightpink')
 
+        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=6)
+        if power_std_list is not None:
+            ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
+                            np.clip(powers + power_std_list[i], 0, 1), alpha=0.5,
+                            edgecolor='lightpink', facecolor='lightpink')
+
         # Reference line
         ax.plot([0, 1], [0, 1], 'g--', alpha=0.75, zorder=0)
 
@@ -63,7 +68,7 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
         if i // n_cols >= n_rows - 1:
             ax.set_xlabel("Target level of FDR")
         if i % n_cols == 0:
-            ax.set_ylabel("FDR and Power")
+            ax.set_ylabel(column_name)
 
         ax.set_xlim(0, 1)
         ax.set_ylim(-0.03, 1.03)
@@ -76,6 +81,85 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
 
     plt.show()
 
+
+def plot_results_with_budget_save(models, target_fdr_list, fdr_list, power_list, budget_save_list=None, fdr_std_list=None, power_std_list=None, budget_save_std_list=None ,column_name="FDR and Power",
+                     figsize=(12, 6), max_cols=3):
+    SMALL_SIZE = 18
+    MEDIUM_SIZE = 18
+    BIGGER_SIZE = 16
+
+    plt.rc('font', size=MEDIUM_SIZE)
+    plt.rc('axes', titlesize=MEDIUM_SIZE)
+    plt.rc('axes', labelsize=MEDIUM_SIZE)
+    plt.rc('xtick', labelsize=MEDIUM_SIZE)
+    plt.rc('ytick', labelsize=MEDIUM_SIZE)
+    plt.rc('legend', fontsize=SMALL_SIZE)
+    plt.rc('figure', titlesize=BIGGER_SIZE)
+
+    # Calculate grid dimensions
+    n_models = len(models)
+    n_rows = (n_models + max_cols - 1) // max_cols
+    n_cols = min(n_models, max_cols)
+
+    # Create figure
+    fig, axs = plt.subplots(n_rows, n_cols, figsize=figsize, squeeze=False, constrained_layout=True)
+    axs = axs.flatten()
+
+    # Plot each model's results
+    for i, (model, target_fdrs, fdrs, powers, budget_save) in enumerate(zip(models, target_fdr_list, fdr_list, power_list, budget_save_list)):
+        ax = axs[i]
+
+        ax.set_xticks([0, 0.5, 1])
+        ax.set_yticks([0, 0.5, 1])
+        ax.set_facecolor('#f0f4f8')
+
+        ax.spines['bottom'].set_visible(True)
+        ax.spines['left'].set_visible(True)
+        ax.spines['right'].set_visible(True)
+        ax.spines['top'].set_visible(True)
+        ax.spines['bottom'].set_color('#D3D3D3')
+        ax.spines['left'].set_color('#D3D3D3')
+        ax.spines['right'].set_color('#D3D3D3')
+        ax.spines['top'].set_color('#D3D3D3')
+
+        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=6)
+        if fdr_std_list is not None:
+            ax.fill_between(target_fdrs, np.clip(fdrs - fdr_std_list[i], 0, 1),
+                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.5,
+                          edgecolor='lightblue', facecolor='lightblue')
+
+        """ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=6)
+        if power_std_list is not None:
+            ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
+                          np.clip(powers + power_std_list[i], 0, 1), alpha=0.5,
+                          edgecolor='lightpink', facecolor='lightpink')"""
+
+        ax.plot(target_fdrs, budget_save, 'rs--', label='Budget save', markersize=6)  # 'C1' = orange
+        if budget_save_std_list is not None:
+            ax.fill_between(target_fdrs, np.clip(budget_save - budget_save_std_list[i], 0, 1),
+                            np.clip(budget_save + budget_save_std_list[i], 0, 1), alpha=0.5,
+                            edgecolor='moccasin', facecolor='moccasin')
+
+        # Reference line
+        ax.plot([0, 1], [0, 1], 'g--', alpha=0.75, zorder=0)
+
+        # Customize subplot
+        ax.set_title(f'{model}')
+        if i // n_cols >= n_rows - 1:
+            ax.set_xlabel("Target level of FDR")
+        if i % n_cols == 0:
+            ax.set_ylabel(column_name)
+
+        ax.set_xlim(0, 1)
+        ax.set_ylim(-0.03, 1.03)
+        ax.grid(True, alpha=0.5, color='#E0E0E0')
+        ax.legend(loc='best', prop={'size': 16})
+
+    # Hide unused subplots
+    for j in range(i + 1, len(axs)):
+        axs[j].axis('off')
+
+    plt.show()
 
 
 # Example usage with synthetic data

@@ -127,20 +127,20 @@ for i in tqdm(range(0, indices, batch_size)):
         results["confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
 
 output_dir = './result/'
-
+output_file = f"./result/{args.dataset}_{args.model}_results.pkl"
 # Create the directory if it doesn't exist
 os.makedirs(output_dir, exist_ok=True)  # `exist_ok=True` prevents errors if dir already exists
 
 # Save the pickle file
-#with open(output_file, 'wb') as f:
- #   pickle.dump(results, f)
+with open(output_file, 'wb') as f:
+    pickle.dump(results, f)
 
 #with open(f'./result/{args.dataset}_{args.model}_results.pkl', "wb") as f:
 #    pickle.dump(results, f)
 
 df = pd.DataFrame(results)
 # Save as plain text (tab-separated for readability)
-df.to_csv(f"./result/{args.dataset}_{args.model}_results.txt", sep="\t", index=False)
+df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep="\t", index=True)
 
 #torch.cuda.empty_cache()
 #del model
