@@ -68,7 +68,7 @@ test_dataset = [reformat(data) for data in test_dataset]
 # Initialize results (with proper population)
 results = {
     "question": [],
-    "Y_hat": [],
+    "Yhat": [],
     "Y": [],
     "logits": [],
     "is_correct": [],
@@ -122,7 +122,7 @@ for i in tqdm(range(0, indices, batch_size)):
         results['question'].append(input_texts[j])
         results['is_correct'].append(np.array(preds == labels[j]))
         results['logits'].append(logits)
-        results['Y_hat'].append(preds)
+        results['Yhat'].append(preds)
         results['Y'].append(labels[j])
         results["confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
 
@@ -140,7 +140,7 @@ with open(output_file, 'wb') as f:
 
 df = pd.DataFrame(results)
 # Save as plain text (tab-separated for readability)
-df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep="\t", index=True)
+df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep=",", index=True)
 
 #torch.cuda.empty_cache()
 #del model

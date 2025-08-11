@@ -48,7 +48,7 @@ for i, ds in enumerate(ds_list):
     Yhat = None
     if ds in ['stance', 'misinfo', 'bias', 'sentiment']:
         Yhat = data["Yhat (GPT4o)"].to_numpy()
-    elif ds in ['imagenet', 'imagenetv2', 'alphafold']:
+    else:
         Yhat = data["Yhat"].to_numpy()
 
     confidence = data["confidence"].to_numpy()
