@@ -1,6 +1,6 @@
 from vllm import LLM, SamplingParams
 from datasets import load_dataset
-import json
+import os
 import numpy as np
 import argparse
 import re
@@ -100,7 +100,6 @@ tokens_in_order = ['A', 'B', 'C', 'D', "E"]
 
 indices = len(cal_dataset)
 for i in tqdm(range(0, indices, batch_size)):
-    print(f"processing:{i}-th data")
     batch = cal_dataset[i:i + batch_size]
     input_texts, labels = [], []
 
@@ -127,6 +126,16 @@ for i in tqdm(range(0, indices, batch_size)):
         results['predicted_answer'].append(preds)
         results['correct_answer'].append(labels[j])
         results["predicted_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
+
+output_dir = './result/'
+output_file = os.path.join(output_dir, 'prediction_results.pkl')
+
+# Create the directory if it doesn't exist
+os.makedirs(output_dir, exist_ok=True)  # `exist_ok=True` prevents errors if dir already exists
+
+# Save the pickle file
+with open(output_file, 'wb') as f:
+    pickle.dump(results, f)
 
 with open(f'./result/prediction_results.pkl', "wb") as f:
     pickle.dump(results, f)
