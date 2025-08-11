@@ -37,7 +37,7 @@ full_dataset = load_dataset('json', data_files={
 # vLLM Setup
 model = LLM(
     model=model_path,
-    gpu_memory_utilization=0.8, max_model_len=10, guided_decoding_backend="xgrammar",
+    gpu_memory_utilization=0.8, max_model_len=2048, guided_decoding_backend="xgrammar",
     tensor_parallel_size=args.tensor_parallel_size,
 
 )
