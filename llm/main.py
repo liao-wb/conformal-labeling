@@ -137,7 +137,7 @@ os.makedirs(output_dir, exist_ok=True)  # `exist_ok=True` prevents errors if dir
 with open(output_file, 'wb') as f:
     pickle.dump(results, f)
 
-with open(f'./result/prediction_results.pkl', "wb") as f:
+with open(f'./result/{args.dataset}_{args.model}_results.pkl', "wb") as f:
     pickle.dump(results, f)
 
 torch.cuda.empty_cache()
