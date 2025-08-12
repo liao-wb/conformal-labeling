@@ -1,32 +1,68 @@
+from datasets import load_dataset
+import re
+import pickle
+import pandas as pd
+import os
 
-def get_confidence(llm, confidence_params, prompt, generated_answer):
-    """Calculate P(True) confidence by asking if the answer is correct"""
-    confidence_prompt = f"""Consider the following question and answer:
+def get_dataset(args):
+    dataset_name = args.dataset
+    full_dataset = load_dataset('json', data_files={
+        'test': f'./data/{dataset_name}/test.json',
+        'validation': f'./data/{dataset_name}/dev.json'  # dev.json is typically validation
+    })
+    cal_dataset = full_dataset['validation']
+    test_dataset = full_dataset['test']
 
-Question: {prompt}
-Answer: {generated_answer}
-
-Is this answer correct? Respond only with 'Yes' or 'No'."""
-
-    output = llm.generate(confidence_prompt, confidence_params)
-    response = output.outputs[0].text.strip().lower()
-
-    # Get the probability of "yes"
-    if output.outputs[0].logprobs:
-        # Check if "yes" is in the first token's options
-        first_token_probs = output.outputs[0].logprobs[0].logprob_dict
-        yes_prob = np.exp(first_token_probs.get("yes", first_token_probs.get(" Yes", -float('inf'))))
+    if args.dataset == "mathqa":
+        label_list = ['A', 'B', 'C', 'D', 'E']
+        reformat = lambda x: {
+            'question': x['Problem'],
+            'choices': parse_options(x['options']),
+            'answer': x['correct'].upper(),  # Convert 'a' -> 'A'
+            'label': label_list
+        }
+    elif args.dataset == "medmcqa":
+        label_list = ['A', 'B', 'C', 'D']
+        reformat = lambda x: {
+            "question": x["question"],
+            "choices": [x["opa"], x["opb"], x["opc"], x["opd"]],
+            "answer": x["cop"],
+            "label": label_list
+        }
     else:
-        yes_prob = 1.0 if response.startswith('yes') else 0.0
+        raise NotImplementedError
 
-    return yes_prob
+    cal_dataset = [reformat(data) for data in cal_dataset]
+    test_dataset = [reformat(data) for data in test_dataset]
+    return cal_dataset, test_dataset, label_list
 
-# Prompt template for MMLU (multiple choice)
-def format_prompt(example):
-    choices = "\n".join([f"{chr(65 + i)}. {choice}" for i, choice in enumerate(example['choices'])])
-    return f"""{example['question']}
+def save_result(args, results):
+    output_dir = './result/'
+    output_file = f"./result/{args.dataset}_{args.model}_results.pkl"
+    os.makedirs(output_dir, exist_ok=True)
 
-Options:
-{choices}
+    with open(output_file, 'wb') as f:
+        pickle.dump(results, f)
 
-Answer with the letter only:"""
+    df = pd.DataFrame(results)
+    df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep=",", index=True)
+
+def parse_options(options_str):
+    options = re.findall(r'[a-z]\)\s*([^a-z]*)', options_str.lower())
+    return [opt.strip() for opt in options]
+
+def format_example(example):
+
+    prompt = 'The following are multi choice questions. Give ONLY the correct option, no other words or explanation:\n'
+
+    question = example['question']
+    label = example['label']
+    answer = example['answer']
+    text = example['choices']
+
+    prompt += ('Question: ' + question + '\n')
+    for i in range(len(text)):
+        prompt += label[i] + ': ' + text[i] + '\n'
+    prompt += 'Answer: '
+
+    return prompt, answer
