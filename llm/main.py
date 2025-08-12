@@ -8,7 +8,7 @@ from utils import get_dataset, format_example, save_result
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="Qwen3-8B")
-parser.add_argument("--data", type=str, default="mathqa")
+parser.add_argument("--dataset", type=str, default="mathqa")
 parser.add_argument("--tensor_parallel_size", type=int, default=4)
 parser.add_argument("--batch_size", type=int, default=32)
 #parser.add_argument("--subject", type=str, default="college_biology")  # MMLU has different subjects
