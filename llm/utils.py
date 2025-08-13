@@ -10,8 +10,8 @@ def get_dataset(args):
     if args.dataset == "mathqa":
         label_list = ['A', 'B', 'C', 'D', 'E']
         full_dataset = load_dataset('json', data_files={
-            'test': f'dataset/{dataset_name}/test.json',
-            'validation': f'dataset/{dataset_name}/dev.json'  # dev.json is typically validation
+            'test': f'/mnt/sharedata/ssd_large/users/huanghp/{dataset_name}/test.json',
+            'validation': f'/mnt/sharedata/ssd_large/users/huanghp/{dataset_name}/dev.json'  # dev.json is typically validation
         })
         dataset = concatenate_datasets([full_dataset["test"], full_dataset["validation"]])
         reformat = lambda x: {
@@ -23,7 +23,7 @@ def get_dataset(args):
     elif args.dataset == "medmcqa":
         label_list = ['A', 'B', 'C', 'D']
         full_dataset = load_dataset('json', data_files={
-            'dev': f'dataset/medmcqa/dev.json',
+            'dev': f'/mnt/sharedata/ssd_large/users/huanghp/medmcqa/dev.json',
         })
         dataset = full_dataset["dev"]
         reformat = lambda x: {
@@ -42,8 +42,8 @@ def get_dataset(args):
         }
     elif args.dataset == "arc_easy":
         full_dataset = load_dataset('json', data_files={
-            'test': f'dataset/arc_easy/test.jsonl',
-            'validation': f'dataset/arc_easy/validation.jsonl'  # dev.json is typically validation
+            'test': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/test.jsonl',
+            'validation': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/validation.jsonl'  # dev.json is typically validation
         })
         dataset = concatenate_datasets([full_dataset["test"], full_dataset["validation"]])
         label_list = ['A', 'B', 'C', 'D']
