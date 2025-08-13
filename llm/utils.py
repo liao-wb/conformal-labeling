@@ -28,7 +28,7 @@ def get_dataset(args):
             "opc": Value("string"),
             "opd": Value("string"),
             "subject_name": Value("string"),
-            "topic_name": Value("null"),  # Explicitly allow nulls
+            "topic_name": Value("string"),
             "id": Value("string"),
             "choice_type": Value("string"),
             "cop": Value("int64"),
