@@ -23,18 +23,17 @@ def get_dataset(args):
         }
     elif args.dataset == "medmcqa":
         label_list = ['A', 'B', 'C', 'D']
-        reformat = lambda x : {
-                "question": x.get("question", ""),
-                "opa": x.get("opa", ""),
-                "opb": x.get("opb", ""),
-                "opc": x.get("opc", ""),
-                "opd": x.get("opd", ""),
-                "subject_name": x.get("subject_name", ""),
-                "topic_name": x.get("topic_name", None),  # Allow null values
-                "id": str(x.get("id", "")),
-                "choice_type": x.get("choice_type", ""),
-                "answer": x.get("cop", ""),  # keep the answer explicitly
-            }
+        reformat = lambda x: {
+            'question': x.get("question", ""),
+            'choices': [  # Combine opa, opb, opc, opd into a list like MathQA
+                x.get("opa", ""),
+                x.get("opb", ""),
+                x.get("opc", ""),
+                x.get("opd", "")
+            ],
+            'answer': label_list[int(x.get("cop", 1)) - 1],  # Convert cop (1-4) to 'A'-'D'
+            'label': label_list
+        }
     else:
         raise NotImplementedError
 

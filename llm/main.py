@@ -20,14 +20,14 @@ batch_size = args.batch_size
 OUTPUT_FILE = f"output/{args.model}_{args.dataset}_results.json"
 model_path =f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
 
+cal_dataset, test_dataset, label_list = get_dataset(args)
+
 # vLLM Setup
 model = LLM(
     model=model_path,
     gpu_memory_utilization=0.8, max_model_len=2048, guided_decoding_backend="xgrammar",
     tensor_parallel_size=args.tensor_parallel_size,
 )
-
-cal_dataset, test_dataset, label_list = get_dataset(args)
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
 sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=5, max_tokens=1)
