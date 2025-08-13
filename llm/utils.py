@@ -40,6 +40,19 @@ def get_dataset(args):
             'answer': x['correct'].upper(),  # Convert 'a' -> 'A'
             'label': label_list
         }
+    elif args.dataset == "arc_easy":
+        full_dataset = load_dataset('json', data_files={
+            'test': f'dataset/arc_easy/test.jsonl',
+            'validation': f'dataset/arc_easy/validation.jsonl'  # dev.json is typically validation
+        })
+        dataset = concatenate_datasets([full_dataset["test"], full_dataset["validation"]])
+        label_list = ['A', 'B', 'C', 'D']
+        reformat = lambda x: {
+            'question': x['question'],
+            'choices': x["choices"]["text"],
+            'answer': x['label'].upper(),  # Convert 'a' -> 'A'
+            'label': label_list
+        }
     else:
         raise NotImplementedError
 
