@@ -43,15 +43,15 @@ def get_dataset(args):
     elif args.dataset == "arc_easy":
         full_dataset = load_dataset('json', data_files={
             'test': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/test.jsonl',
-            'validation': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/validation.jsonl'  # dev.json is typically validation
+            'validation': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/validation.jsonl'
         })
         dataset = concatenate_datasets([full_dataset["test"], full_dataset["validation"]])
-        label_list = ['A', 'B', 'C', 'D']
+        label_list = ['A', 'B', 'C', 'D', 'E']
         reformat = lambda x: {
             'question': x['question'],
             'choices': x["choices"]["text"],
             'answer': x['label'].upper(),  # Convert 'a' -> 'A'
-            'label': label_list
+            'label': label_list[:len(x["choices"]["text"])]
         }
     else:
         raise NotImplementedError
@@ -84,6 +84,7 @@ def format_example(example):
     text = example['choices']
 
     prompt += ('Question: ' + question + '\n')
+
     for i in range(len(text)):
         prompt += label[i] + ': ' + text[i] + '\n'
     prompt += 'Answer: '
