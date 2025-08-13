@@ -1,4 +1,4 @@
-from datasets import load_dataset, Value
+from datasets import load_dataset, Value, Features
 import re
 import pickle
 import pandas as pd
@@ -21,7 +21,7 @@ def get_dataset(args):
             'label': label_list
         }
     elif args.dataset == "medmcqa":
-        features = {
+        features = Features({
             "question": Value("string"),
             "opa": Value("string"),
             "opb": Value("string"),
@@ -32,7 +32,7 @@ def get_dataset(args):
             "id": Value("string"),
             "choice_type": Value("string"),
             "cop": Value("int64")  # Add this if you need it
-        }
+        })
 
         full_dataset = load_dataset('json', data_files={
             'test': f'dataset/{dataset_name}/test.json',
