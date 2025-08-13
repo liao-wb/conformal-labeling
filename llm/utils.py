@@ -23,10 +23,17 @@ def get_dataset(args):
         }
     elif args.dataset == "medmcqa":
         label_list = ['A', 'B', 'C', 'D']
+
+        # Ensure all required fields exist, handle missing/null values
         reformat = lambda x: {
-            "question": x["question"],
-            "choices": [x["opa"], x["opb"], x["opc"], x["opd"]],
-            "answer": x["cop"],
+            "question": x.get("question", ""),  # Fallback to empty string if missing
+            "choices": [
+                x.get("opa", ""),
+                x.get("opb", ""),
+                x.get("opc", ""),
+                x.get("opd", "")
+            ],
+            "answer": str(x.get("cop", "A")),  # Ensure 'cop' is treated as string (e.g., '1' -> 'A')
             "label": label_list
         }
     else:
