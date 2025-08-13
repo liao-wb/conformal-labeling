@@ -1,4 +1,4 @@
-from datasets import load_dataset
+from datasets import load_dataset, Value
 import re
 import pickle
 import pandas as pd
@@ -6,14 +6,13 @@ import os
 
 def get_dataset(args):
     dataset_name = args.dataset
-    full_dataset = load_dataset('json', data_files={
-        'test': f'dataset/{dataset_name}/test.json',
-        'validation': f'dataset/{dataset_name}/dev.json'  # dev.json is typically validation
-    })
-    cal_dataset = full_dataset['validation']
-    test_dataset = full_dataset['test']
 
     if args.dataset == "mathqa":
+        full_dataset = load_dataset('json', data_files={
+            'test': f'dataset/{dataset_name}/test.json',
+            'validation': f'dataset/{dataset_name}/dev.json'  # dev.json is typically validation
+        })
+
         label_list = ['A', 'B', 'C', 'D', 'E']
         reformat = lambda x: {
             'question': x['Problem'],
@@ -22,6 +21,24 @@ def get_dataset(args):
             'label': label_list
         }
     elif args.dataset == "medmcqa":
+        features = {
+            "question": Value("string"),
+            "opa": Value("string"),
+            "opb": Value("string"),
+            "opc": Value("string"),
+            "opd": Value("string"),
+            "subject_name": Value("string"),
+            "topic_name": Value("null"),  # Explicitly allow nulls
+            "id": Value("string"),
+            "choice_type": Value("string"),
+            "cop": Value("int64")  # Add this if you need it
+        }
+
+        full_dataset = load_dataset('json', data_files={
+            'test': f'dataset/{dataset_name}/test.json',
+            'validation': f'dataset/{dataset_name}/dev.json'  # dev.json is typically validation
+        }, features=features)
+
         label_list = ['A', 'B', 'C', 'D']
         reformat = lambda x: {
             'question': x.get("question", ""),
@@ -36,6 +53,9 @@ def get_dataset(args):
         }
     else:
         raise NotImplementedError
+
+    cal_dataset = full_dataset['validation']
+    test_dataset = full_dataset['test']
 
     cal_dataset = [reformat(data) for data in cal_dataset]
     test_dataset = [reformat(data) for data in test_dataset]
