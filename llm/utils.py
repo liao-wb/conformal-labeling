@@ -29,7 +29,7 @@ def get_dataset(args):
         reformat = lambda x: {
             'question': x['question'],
             'choices': [x['opa'], x['opb'], x['opc'], x['opd']],
-            'answer': label_list[x['cop']],
+            'answer': label_list[x['cop'] - 1],
             'label': label_list,
         }
     elif args.dataset == "commonsenseqa":
