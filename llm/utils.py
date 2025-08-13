@@ -31,7 +31,8 @@ def get_dataset(args):
             "topic_name": Value("null"),  # Explicitly allow nulls
             "id": Value("string"),
             "choice_type": Value("string"),
-            "cop": Value("int64")  # Add this if you need it
+            "cop": Value("int64"),
+            "exp": Value("string")
         })
 
         full_dataset = load_dataset('json', data_files={
