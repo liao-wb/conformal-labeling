@@ -7,8 +7,8 @@ import os
 def get_dataset(args):
     dataset_name = args.dataset
     full_dataset = load_dataset('json', data_files={
-        'test': f'./dataset/{dataset_name}/test.json',
-        'validation': f'./dataset/{dataset_name}/dev.json'  # dev.json is typically validation
+        'test': f'dataset/{dataset_name}/test.json',
+        'validation': f'dataset/{dataset_name}/dev.json'  # dev.json is typically validation
     })
     cal_dataset = full_dataset['validation']
     test_dataset = full_dataset['test']
