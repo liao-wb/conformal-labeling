@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import seaborn as sns
-from algorithm.alg import bh_procedure
+from algorithm.select_alg import bh
 # %%
 print("First")
 n_simulations = 100
@@ -42,7 +42,7 @@ for iter in range(n_simulations):
     s_test = np.array([y_test_prob[i, y_test_pred[i]] for i in range(m)])
     n_test = m
 
-    #print(f"Calibration and test data:{n_cal} and {n_test}")
+    #print(f"Calibration and test dataset:{n_cal} and {n_test}")
     fdp, power, t = 0, 0, 0
     for i in range(1000):
         S = [j for j in range(m) if s_test[j] > t]
@@ -98,7 +98,7 @@ for iter in range(n_simulations):
     s_test = 1 - np.array([y_test_prob[i, y_test_pred[i]] for i in range(m)])
     n_test = m
 
-    #print(f"Calibration and test data:{n_cal} and {n_test}")
+    #print(f"Calibration and test dataset:{n_cal} and {n_test}")
     fdp, power = 0, 0
     t_list = np.concatenate((s_cal, s_test), axis=0)
     t_list = sorted(t_list, reverse=True)
@@ -162,7 +162,7 @@ for iter in range(n_simulations):
     s_test = 1 - np.array([y_test_prob[i, y_test_pred[i]] for i in range(m)])
 
     p_values = (np.sum(s_test[:, None] >= s_cal, axis=-1) + 1) / (1 + n_cal)
-    selection_indices = bh_procedure(p_values, alpha)
+    selection_indices = bh(p_values, alpha)
 
     y_reject, y_hat_reject = y_test[selection_indices], y_test_pred[selection_indices]
 

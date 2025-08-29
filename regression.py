@@ -1,15 +1,16 @@
+import pandas as pd
 import numpy as np
-from algorithm.select_alg import selection
-from algorithm.preprocess import get_data
+from algorithm.select_alg import reg_selection
 import argparse
-
+import matplotlib.pyplot as plt
+from plot_utils.plot import plot_results
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="gpt-4-turbo" ,choices=["vision", "text", "all", 'stance', 'misinfo', 'bias', 'imagenet', 'imagenetv2'])
+parser.add_argument("--datasets", type=str, default="sentiment" ,choices=["vision", "text", "all", 'stance', 'misinfo', 'bias', 'imagenet', 'imagenetv2', "alphafold"])
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
@@ -30,7 +31,15 @@ power_array = np.zeros(shape=(len(ds_list), args.num_trials))
 selection_size_array = np.zeros(shape=(len(ds_list), args.num_trials))
 
 for i, ds in enumerate(ds_list):
-    Y, Yhat, confidence = get_data(ds)
+    data = pd.read_csv("./datasets/" + ds + '.csv')
+    Y = data["Y"].to_numpy()
+    Yhat = None
+    if ds in ['stance', 'misinfo', 'bias', 'sentiment']:
+        Yhat = data["Yhat (GPT4o)"].to_numpy()
+    elif ds in ['imagenet', 'imagenetv2', 'alphafold']:
+        Yhat = data["Yhat"].to_numpy()
+
+    confidence = data["confidence"].to_numpy()
     n = len(Y)
 
     alpha = args.alpha
@@ -40,12 +49,7 @@ for i, ds in enumerate(ds_list):
     selection_size_list = []
     error_list = []
     for j in range(num_trials):
-        n_samples = len(Y)
-        n_calib = int(n_samples * args.calib_ratio)
-        n_test = n_samples - n_calib
-        cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
-
-        fdp, power, selection_size = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+        fdp, power, selection_size = reg_selection(Y, Yhat, confidence, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args, error=0.05)
         fdr_list.append(fdp)
         power_list.append(power)
         selection_size_list.append(selection_size)
@@ -59,6 +63,5 @@ for i, ds in enumerate(ds_list):
     print(f"Mean FDR: {np.mean(fdr_list)}")
     print(f"Mean Power: {np.mean(power_list)}")
     print(f"Mean Selection Size: {np.mean(selection_size_list)}")
-    print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
+    print(f"Budget save percent:{np.mean(selection_size_array) / len(Y) * 100}")
     print(f"Mean Error: {np.mean(np.array(error_list)) * 100}")
-    print(f"Variance of cbh:{np.var(np.array(error_list * 100))}")

@@ -5,7 +5,7 @@ from sklearn.ensemble import RandomForestClassifier
 from scipy.spatial.distance import cdist
 import matplotlib.pyplot as plt
 import seaborn as sns
-from algorithm.alg import bh_procedure
+from algorithm.select_alg import bh
 # %%
 n_simulations = 10
 alpha = 0.1

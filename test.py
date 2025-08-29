@@ -1,56 +1,27 @@
-import os
+import json
+
 import numpy as np
-import matplotlib.pyplot as plt
-from torchvision.datasets import ImageNet
-from PIL import Image
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument('--classname', type=str, default='goldfish')
-args = parser.parse_args()
-# Load ImageNet (validation set by default)
-dataset = ImageNet(root='/mnt/sharedata/ssd_small/common/datasets/imagenet', split='val')
+import pandas as pd
 
-# Get class names
-class_names = dataset.classes
+# Define the path to your .jsonl file
+file_path = 'perference_data/gpt-3.5-turbo.calibration.jsonl'
 
-# Function to show an image
-def show_single_image(image, label, class_name):
-    plt.figure(figsize=(5, 5))
-    plt.imshow(image)
-    plt.title(f"Class: {class_name}\nLabel: {label}")
-    plt.axis('off')
-    plt.show()
+# Create an empty list to store the parsed JSON objects
+data = []
 
-# --- Specify the desired class (e.g., "goldfish") ---
-desired_class = args.classname  # Change this to any class in ImageNet
+# Open the file and process it line by line
+with open(file_path, 'r', encoding='utf-8') as file:
+    for line in file:
+        # Parse the JSON from the current line and append to the list
+        json_object = json.loads(line)
+        data.append(json_object)
 
-# Find all indices of images belonging to the desired class
-class_idx = class_names.index(desired_class)  # Get the class index
-indices_of_class = [i for i, (_, label) in enumerate(dataset) if label == class_idx]
+#print(data[0]) # Print the first object
+data = pd.DataFrame(data)
 
-if not indices_of_class:
-    print(f"No images found for class: {desired_class}")
-    exit()
-
-# Randomly select one image from this class
-random_idx = np.random.choice(indices_of_class)
-image, label = dataset[random_idx]
-
-# Display the image
-show_single_image(image, label, class_names[label])
-
-# Save the image (avoid overwriting existing files)
-save_dir = "images"
-os.makedirs(save_dir, exist_ok=True)  # Create dir if it doesn't exist
-
-i = 0
-while True:
-    path = os.path.join(save_dir, f"{class_names[label]}_{i}.jpg")
-    if not os.path.exists(path):
-        break
-    i += 1
-
-image.save(path)
-print(f"Saved to: {path}")
-
-print("\nClass Name:", class_names[label])
+Y = data["preferences"].to_numpy()
+Y = np.array([y['human'] for y in Y]) - 1
+probs = data["probs"]
+#Y_hat = np.argmax(probs, axis=-1)
+Y_hat = np.array([np.argmax(prob, axis=-1) for prob in probs])
+confidence = np.array([np.max(prob, axis=-1) for prob in probs])
