@@ -45,6 +45,6 @@ TRANSFORM_IMAGENET_TEST = transforms.Compose([
     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225)),
 ])
 
-# data split
+# dataset split
 CIFAR10_CALNUM = 5000
 CIFAR10_TESTNUM = 5000
