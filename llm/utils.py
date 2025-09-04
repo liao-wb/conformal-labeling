@@ -1,4 +1,4 @@
-from datasets import load_dataset, concatenate_datasets
+from datasets import load_dataset, concatenate_datasets, load_from_disk
 import re
 import pickle
 import pandas as pd
@@ -23,8 +23,8 @@ def get_dataset(args):
         }
     elif args.dataset == "mmlu":
         label_list = ['A', 'B', 'C', 'D']
-        test_dataset = load_dataset("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test")
-        val_dataset = load_dataset("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation")
+        test_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test")
+        val_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation")
         dataset = concatenate_datasets([val_dataset, test_dataset])
 
         reformat = lambda x: {
