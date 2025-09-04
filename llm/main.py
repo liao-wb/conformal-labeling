@@ -54,7 +54,7 @@ outputs = model.generate(
         use_tqdm=False
     )
 
-for i, output in enumerate(outputs):
+for i, output in tqdm(enumerate(outputs)):
     outputs_dict = output.outputs[0].logprobs[0]
     token_ids = {token: next(key for key, value in outputs_dict.items() if value.decoded_token == token) for token in label_list}
     logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]
