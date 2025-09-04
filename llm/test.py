@@ -7,16 +7,15 @@ ds = load_dataset(
 )
 print(ds)
 print()
-print(ds["test"]["options"][0][8])
-print(ds["test"]["answer"])
+print(ds["test"]["answer"][0])
+print(ds["test"]["options"][0])
 
-print("haha")
 
-ds = load_dataset(
-    "json",
-    data_files={"test":"/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/llm/dataset/medmcqa/dev.json",}
-)
-print(ds)
-print()
-print(ds["test"]["opa"][0])
-print(ds["test"]["cop"][0])
+# ds = load_dataset(
+#     "json",
+#     data_files={"test":"/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/llm/dataset/medmcqa/dev.json",}
+# )
+# print(ds)
+# print()
+# print(ds["test"]["opa"][0])
+# print(ds["test"]["cop"][0])

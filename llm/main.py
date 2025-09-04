@@ -31,7 +31,7 @@ model = LLM(
 )
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
-sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=len(label_list), max_tokens=1)
+sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=True, max_tokens=1)
 
 results = {
     "Yhat": [],
