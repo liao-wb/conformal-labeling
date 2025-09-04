@@ -1,8 +1,7 @@
-vllm==0.9
+torch
 torchvision
+vllm
 numpy
 pandas
 tqdm
-datasets
 matplotlib
-#jupyter                # Jupyter Notebook supportgit clone https://hf-mirror.com/datasets/cais/mmlu
