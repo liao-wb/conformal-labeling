@@ -76,4 +76,4 @@ for subject in _SUBJECTS:
     else:
         dataset = concatenate_datasets([dataset, dataset_i])
 print(dataset)
-print(dataset["choices"][0])
+print(min(dataset["answer"]))
