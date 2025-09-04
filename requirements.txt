@@ -1,8 +1,8 @@
-torch
-torchvision
 vllm
+torchvision
 numpy
 pandas
 tqdm
+datasets
 matplotlib
 #jupyter                # Jupyter Notebook support
