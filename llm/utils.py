@@ -31,9 +31,9 @@ def get_dataset(args):
         dataset = concatenate_datasets([full_dataset["validation"], full_dataset["test"]])
         reformat = lambda x: {
             'question': x['question'],
-            'choices': parse_options(x['options']),
+            'choices': x['options'],
             'answer': x['answer'].upper(),  # Convert 'a' -> 'A'
-            'label': label_list
+            'label': label_list[:len(x["options"])]
         }
     elif args.dataset == "medmcqa":
         label_list = ['A', 'B', 'C', 'D']
