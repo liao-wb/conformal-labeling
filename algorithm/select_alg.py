@@ -50,7 +50,71 @@ def selection(Y, Yhat, confidence, cal_indices, alpha, args, calib_ratio=0.5, ra
     fdr = np.sum(y_reject != y_hat_reject) / selection_size if selection_size > 0 else 0
     power = np.sum(y_reject == y_hat_reject) / np.sum(y_test == y_hat_test)
 
-    return fdr, power, selection_size
+    return fdr, power, selection_size, selection_indices
+
+
+def new_selection(y_calib, y_hat_calib, conf_calib, y_test, y_hat_test, conf_test, alpha, args, random=True):
+    """"""
+    n_calib = y_calib.shape[0]
+    n_test = y_test.shape[0]
+
+    # H0: y_hat != y
+    cal0_idx = (y_hat_calib != y_calib)
+    y_calib_0, y_hat_calib_0, conf_calib_0 = y_calib[cal0_idx], y_hat_calib[cal0_idx], conf_calib[cal0_idx]
+    n_calib_0 = y_calib_0.shape[0]
+
+    p_values = compute_p_values(conf_calib_0, conf_test, random)
+    #p_values = compute_e_2_p_values(conf_calib_0, conf_test, random)
+
+    if args.algorithm == "bh":
+        selection_indices = bh(p_values, alpha)
+    elif args.algorithm == "cbh":
+        selection_indices = bh(p_values, alpha * (1 + n_calib) / (1 + n_calib_0))
+    elif args.algorithm == "sbh":
+        selection_indices = storeybh(p_values, alpha)
+    elif args.algorithm == "qbh":
+        selection_indices = quantbh(p_values, alpha, k_0=args.k_0)
+    elif args.algorithm == "by":
+        raise NotImplementedError
+    elif args.algorithm == "dby":
+        raise NotImplementedError
+    else:
+        raise NotImplementedError
+
+    y_reject, y_hat_reject = y_test[selection_indices], y_hat_test[selection_indices]
+    #y_accept, y_hat_accept = y_test[selection_indices == 0], y_hat_test[selection_indices == 0]
+
+    selection_size = y_reject.shape[0]
+
+    fdr = np.sum(y_reject != y_hat_reject) / selection_size if selection_size > 0 else 0
+    power = np.sum(y_reject == y_hat_reject) / np.sum(y_test == y_hat_test)
+
+    return fdr, power, selection_size, selection_indices
+
+def compute_p_values(conf_calib_0, conf_test, random):
+    n_calib_0 = conf_calib_0.shape[0]
+    n_test = conf_test.shape[0]
+    cal0_score = 1 - conf_calib_0
+    test_score = 1 - conf_test
+
+    if random:
+        p_values = np.sum((test_score[:, None] > cal0_score), axis=-1) + np.random.rand(n_test) * (
+                    np.sum((test_score[:, None] == cal0_score), axis=-1) + 1)
+        p_values /= (1 + n_calib_0)
+    else:
+        p_values = np.sum((test_score[:, None] >= cal0_score), axis=-1) + 1
+        p_values /= (1 + n_calib_0)
+    return p_values
+
+def compute_e_2_p_values(conf_calib_0, conf_test, random):
+    n_calib_0 = conf_calib_0.shape[0]
+    n_test = conf_test.shape[0]
+    cal0_score = 1 - conf_calib_0
+    test_score = 1 - conf_test
+
+    upper = np.sum(conf_calib_0)
+    p_values = upper / conf_test / (n_calib_0)
+    return p_values
 
 def reg_selection(y, y_hat, confidence, alpha, args, error, calib_ratio=0.5, random=True):
     """"""

@@ -22,8 +22,7 @@ def get_preference_data(dataset):
     calib_file_path = "preference_data/" + dataset + ".calibration.jsonl"
     test_file_path = "preference_data/" + dataset + ".test.jsonl"
 
-    calib_file_path = "perference_data/gpt-3.5-turbo.calibration.jsonl"
-    test_file_path = "perference_data/gpt-3.5-turbo.test.jsonl"
+
     data = []
     # Open the file and process it line by line
     with open(calib_file_path, 'r', encoding='utf-8') as file:
@@ -48,4 +47,7 @@ def get_preference_data(dataset):
     Y_hat = np.array([np.argmax(prob, axis=-1) for prob in probs])
     confidence = np.array([np.max(prob, axis=-1) for prob in probs])
 
-    return Y, Y_hat, confidence
+    data["confidence"] = confidence
+    data["Yhat"] = Y_hat
+    data["Y"] = Y
+    return Y, Y_hat, confidence, data

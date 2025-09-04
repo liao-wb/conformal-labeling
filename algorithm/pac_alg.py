@@ -2,7 +2,7 @@ import numpy as np
 from scipy.stats import bernoulli, norm
 
 
-def pac_labeling(Y, Yhat, loss, epsilon, alpha, uncertainty, pi, num_draws, asymptotic=True):
+def pac_labeling(Y, Yhat, loss, error_hyperparameter, prob_hyperparameter, uncertainty, pi, num_draws, asymptotic=True):
     n = len(Y)
 
     # Initialize labels
@@ -14,7 +14,10 @@ def pac_labeling(Y, Yhat, loss, epsilon, alpha, uncertainty, pi, num_draws, asym
     ik_samples = np.random.choice(range(n), size=num_draws)
     xi_samples = bernoulli.rvs([pi[ik] for ik in ik_samples])
     ik_samples_unique = np.unique(ik_samples)
+    calibration_idx = np.zeros(n)
+
     for ik in ik_samples_unique:
+        calibration_idx[ik] = 1
         labeled_inds[ik] = xi_samples[np.where(ik_samples == ik)].any()
         if labeled_inds[ik]:
             Y_tilde[ik] = Y[ik]
@@ -30,8 +33,8 @@ def pac_labeling(Y, Yhat, loss, epsilon, alpha, uncertainty, pi, num_draws, asym
         j = (lb_index + ub_index) // 2
         lam = lams[j]
         errors = base_errors * (uncertainty[ik_samples] < lam)
-        err_ci = mean_ci(errors, alpha, asymptotic=asymptotic, ub=ub)
-        if err_ci[1] > epsilon:
+        err_ci = mean_ci(errors, prob_hyperparameter, asymptotic=asymptotic, ub=ub)
+        if err_ci[1] > error_hyperparameter:
             ub_index = j - 1
         else:
             lb_index = j + 1
@@ -39,7 +42,13 @@ def pac_labeling(Y, Yhat, loss, epsilon, alpha, uncertainty, pi, num_draws, asym
     lam = lams[lb_index - 1]
     labeled_inds[uncertainty >= lam] = 1
     Y_tilde[uncertainty >= lam] = Y[uncertainty >= lam]
-    return Y_tilde, labeled_inds, n_unique
+    selection_idx = (calibration_idx == 0) * (uncertainty < lam)
+    selection_size = np.sum(selection_idx)
+    Y_selected = Y[selection_idx]
+    Y_hat_selected = Yhat[selection_idx]
+    fdp = np.sum(Y_selected != Y_hat_selected) / selection_size
+    power = np.sum(Y_selected == Y_hat_selected) / np.sum(Y == Yhat)
+    return fdp, power, selection_size
 
 def mean_ci(Z, alpha, asymptotic=True, ub=1):
     if asymptotic:

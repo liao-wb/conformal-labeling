@@ -6,11 +6,11 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="gpt-4-turbo" ,choices=["vision", "text", "all", 'stance', 'misinfo', 'bias', 'imagenet', 'imagenetv2'])
+parser.add_argument("--datasets", type=str, default="misinfo")
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
-parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
+parser.add_argument("--num_trials", type=int, default=1000, help="Number of trials")
+parser.add_argument("--alpha", default=0.2, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
 args = parser.parse_args()
@@ -45,7 +45,7 @@ for i, ds in enumerate(ds_list):
         n_test = n_samples - n_calib
         cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
 
-        fdp, power, selection_size = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+        fdp, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
         fdr_list.append(fdp)
         power_list.append(power)
         selection_size_list.append(selection_size)
@@ -55,10 +55,16 @@ for i, ds in enumerate(ds_list):
     power_array[i] = np.array(power_list)
     selection_size_array[i] = np.array(selection_size_list)
 
-    print(f"Results of {ds} dataset. q = {args.alpha}")
-    print(f"Mean FDR: {np.mean(fdr_list)}")
-    print(f"Mean Power: {np.mean(power_list)}")
-    print(f"Mean Selection Size: {np.mean(selection_size_list)}")
     print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
-    print(f"Mean Error: {np.mean(np.array(error_list)) * 100}")
-    print(f"Variance of cbh:{np.var(np.array(error_list * 100))}")
+    print(f"Mean Overall Error: {np.mean(np.array(error_list)) * 100}")
+    print(f"Mean FDR: {np.mean(fdr_list)}")
+
+    print(f"Accuracy:{np.sum(Yhat==Y)/len(Y)}")
+    # print()
+    # print(f"Results of {ds} dataset. q = {args.alpha}")
+    # print(f"Mean FDR: {np.mean(fdr_list)}")
+    # print(f"Mean Power: {np.mean(power_list)}")
+    # print(f"Mean Selection Size: {np.mean(selection_size_list)}")
+    # print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
+    # print(f"Mean Overall Error: {np.mean(np.array(error_list)) * 100}")
+    # print(f"Variance of cbh:{np.var(np.array(error_list * 100))}")

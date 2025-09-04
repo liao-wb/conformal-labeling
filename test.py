@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 # Define the path to your .jsonl file
-file_path = 'perference_data/gpt-3.5-turbo.calibration.jsonl'
+file_path = 'preference_data/gpt-3.5-turbo.calibration.jsonl'
 
 # Create an empty list to store the parsed JSON objects
 data = []

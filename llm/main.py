@@ -22,15 +22,16 @@ model_path =f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
 
 dataset, label_list = get_dataset(args)
 
+print()
 # vLLM Setup
 model = LLM(
     model=model_path,
-    gpu_memory_utilization=0.8, max_model_len=2048, guided_decoding_backend="xgrammar",
+    gpu_memory_utilization=0.95, max_model_len=2048,
     tensor_parallel_size=args.tensor_parallel_size,
 )
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
-sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=5, max_tokens=1)
+sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=len(label_list), max_tokens=1)
 
 results = {
     "Yhat": [],
