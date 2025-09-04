@@ -6,7 +6,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="misinfo")
+parser.add_argument("--datasets", type=str, default="Qwen3-8B_mmlu_pro")
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=1000, help="Number of trials")
