@@ -23,13 +23,10 @@ def get_dataset(args):
         }
     elif args.dataset == "mmlu":
         label_list = ['A', 'B', 'C', 'D']
-        full_dataset = load_dataset(
-            "parquet",
-            data_files={
-                "test": "/mnt/sharedata/ssd_large/users/huanghp/mmlu/all/test-00000-of-00001.parquet",
-                "validation": "/mnt/sharedata/ssd_large/users/huanghp/mmlu/all/validation-00000-of-00001.parquet"}
-        )
-        dataset = concatenate_datasets([full_dataset["validation"], full_dataset["test"]])
+        test_dataset = load_dataset("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test")
+        val_dataset = load_dataset("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation")
+        dataset = concatenate_datasets([val_dataset, test_dataset])
+
         reformat = lambda x: {
             'question': x['question'],
             'choices': x['choices'],
