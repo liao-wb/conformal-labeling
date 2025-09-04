@@ -20,6 +20,21 @@ def get_dataset(args):
             'answer': x['correct'].upper(),  # Convert 'a' -> 'A'
             'label': label_list
         }
+    elif args.dataset == "mmlu_pro":
+        label_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
+        full_dataset = load_dataset(
+            "parquet",
+            data_files={
+                "test": "/mnt/sharedata/ssd_large/common/datasets/MMLU-Pro/data/test-00000-of-00001.parquet",
+                "validation": "/mnt/sharedata/ssd_large/common/datasets/MMLU-Pro/data/validation-00000-of-00001.parquet"}
+        )
+        dataset = concatenate_datasets([full_dataset["validation"], full_dataset["test"]])
+        reformat = lambda x: {
+            'question': x['question'],
+            'choices': parse_options(x['options']),
+            'answer': x['answer'].upper(),  # Convert 'a' -> 'A'
+            'label': label_list
+        }
     elif args.dataset == "medmcqa":
         label_list = ['A', 'B', 'C', 'D']
         full_dataset = load_dataset('json', data_files={
