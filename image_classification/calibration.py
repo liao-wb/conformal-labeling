@@ -7,6 +7,7 @@ from torch.utils.data import random_split
 import argparse
 import pandas as pd
 import torch.nn.functional as F
+from tqdm import tqdm
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -34,13 +35,13 @@ cal_test_dataset = torchvision.datasets.ImageFolder(
 cal_dataset, test_dataset = random_split(cal_test_dataset, [int(0.2 * len(cal_test_dataset)), len(cal_test_dataset) - int(0.2 * len(cal_test_dataset))])
 
 cal_dataloader = DataLoader(cal_dataset, batch_size=args.batch_size, shuffle=False)
-test_dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False)
 
 T = torch.tensor(1.0, dtype=torch.float, device=device, requires_grad=True)
 optimizer = torch.optim.SGD([T], lr=0.01)  # Note: T should be in a list
 
 model.train()
-for epoch in range(20):
+for epoch in tqdm(range(20)):
     total_loss = 0.0
     for data, target in cal_dataloader:
         data, target = data.to(device), target.to(device)
@@ -73,7 +74,7 @@ y_true = []
 
 
 with torch.no_grad():
-    for data, target in test_dataloader:
+    for data, target in tqdm(test_dataloader):
         data, target = data.to(device), target.to(device)
 
         logits = model(data)
