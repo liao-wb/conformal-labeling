@@ -20,7 +20,7 @@ parser.add_argument("--datasets", type=str, default="gpt-4-turbo" ,choices=["vis
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
-parser.add_argument("--alpha", default=0.05, type=float, help="FDR threshold q")
+parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
 args = parser.parse_args()
@@ -29,18 +29,21 @@ size_list1 = []
 fdr_list1 = []
 power_list1 = []
 
+
 size_list2 = []
 fdr_list2 = []
 power_list2 = []
+
 
 size_list3 = []
 fdr_list3 = []
 power_list3 = []
 
+
 total_fdr_list = []
 
 
-for _ in range(1000):
+for _ in range(100):
     #data1 = pd.read_csv("./datasets/" + "Qwen3-8B_medmcqa.csv")
     #data2 = pd.read_csv("./datasets/" + "Qwen3-32B_medmcqa.csv")
     #data3 = pd.read_csv("./datasets/" + "Llama-3.1-70B-Instruct_medmcqa.csv")
@@ -48,6 +51,7 @@ for _ in range(1000):
     _,_,_, data1 = get_preference_data("mistral-7b-instruct")
     _,_,_, data2 = get_preference_data("gpt-3.5-turbo")
     _, _, _, data3 = get_preference_data("gpt-4-turbo")
+    total_size = len(data1)
 
     shuffle_indices = np.random.permutation(len(data1))
     data1 = data1.iloc[shuffle_indices]
@@ -81,13 +85,13 @@ for _ in range(1000):
 
 
 print("1")
-print(np.mean(fdr_list1), np.mean(power_list1), np.mean(size_list1))
+print(np.mean(fdr_list1), np.mean(power_list1), np.mean(size_list1), np.mean(size_list1) / total_size)
 
 print("2")
-print(np.mean(fdr_list2), np.mean(power_list2), np.mean(size_list2))
+print(np.mean(fdr_list2), np.mean(power_list2), np.mean(size_list2), np.mean(size_list2) / total_size)
 
 print("3")
-print(np.mean(fdr_list3), np.mean(power_list3), np.mean(size_list3))
+print(np.mean(fdr_list3), np.mean(power_list3), np.mean(size_list3), np.mean(size_list3) / total_size)
 
 print("Total Selection Size")
 size_list1 = np.array(size_list1)
@@ -107,26 +111,26 @@ fdr_list2 = np.array(fdr_list2)
 size_list1 = np.array(size_list1)
 size_list2 = np.array(size_list2)
 
-def covariance_pandas(x_list, y_list):
-    """
-    Calculates the sample covariance between two lists using pandas.
-
-    Args:
-        x_list (list): List of numerical values for the first variable.
-        y_list (list): List of numerical values for the second variable.
-
-    Returns:
-        float: The sample covariance between the two lists.
-
-    Raises:
-        ValueError: If the lists are of different lengths.
-    """
-    # Create Series objects
-    x_series = pd.Series(x_list)
-    y_series = pd.Series(y_list)
-
-    # Use the .cov() method
-    return x_series.cov(y_series)
-
-print(covariance_pandas(size_list1 / (size_list1 + size_list2), fdr_list1))
-print(covariance_pandas(size_list2 / (size_list1 + size_list2), fdr_list2))
+# def covariance_pandas(x_list, y_list):
+#     """
+#     Calculates the sample covariance between two lists using pandas.
+#
+#     Args:
+#         x_list (list): List of numerical values for the first variable.
+#         y_list (list): List of numerical values for the second variable.
+#
+#     Returns:
+#         float: The sample covariance between the two lists.
+#
+#     Raises:
+#         ValueError: If the lists are of different lengths.
+#     """
+#     # Create Series objects
+#     x_series = pd.Series(x_list)
+#     y_series = pd.Series(y_list)
+#
+#     # Use the .cov() method
+#     return x_series.cov(y_series)
+#
+# print(covariance_pandas(size_list1 / (size_list1 + size_list2), fdr_list1))
+# print(covariance_pandas(size_list2 / (size_list1 + size_list2), fdr_list2))

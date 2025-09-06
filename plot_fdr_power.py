@@ -3,6 +3,7 @@ import numpy as np
 from algorithm.select_alg import selection
 import argparse
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--algorithm", default="integrative", choices=["bh", "sbh", "cbh", "qbh", "integrative"])
@@ -10,7 +11,7 @@ parser.add_argument("--_lambda", type=float, default=0.94)
 parser.add_argument("--k_0", type=int, default=10000)
 
 parser.add_argument("--datasets", type=str, default="imagenet",)
-parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
+parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
@@ -37,10 +38,12 @@ else:
 algorithm_list = ["bh", "sbh", "qbh", "cbh"]
 algorithm_fdr_list = [[] for _ in range(len(algorithm_list))]
 algorithm_power_list = [[] for _ in range(len(algorithm_list))]
-for i, algorithm in enumerate(algorithm_list):
+j = 0
+for i, algorithm in tqdm(enumerate(algorithm_list)):
+    print(i)
     args.algorithm = algorithm
     ds = args.datasets
-
+    j = i + 1
     data = pd.read_csv("./datasets/" + ds + '.csv', sep=",")
     Y = data["Y"].to_numpy()
     Yhat = None
@@ -58,8 +61,11 @@ for i, algorithm in enumerate(algorithm_list):
         budget_save_list = []
 
         for z in range(num_trials):
-            fdp, power, selection_size = selection(Y, Yhat, confidence, alpha, args, calib_ratio=args.calib_ratio,
-                                                   random=(args.random == "True"))
+            n_samples = len(Y)
+            n_calib = int(n_samples * args.calib_ratio)
+            n_test = n_samples - n_calib
+            cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
+            fdp, power, selection_size, _ = selection(Y, Yhat, confidence, cal_indices, alpha, args, calib_ratio=args.calib_ratio, random=True)
             fdr_list.append(fdp)
             power_list.append(power)
 
@@ -70,18 +76,19 @@ def label_map(x):
     if x == "bh":
         return "BH"
     elif x == "sbh":
-        return "Storey's Method"
+        return "Storey-BH"
     elif x == "qbh":
         return "Quantile BH"
     elif x == "cbh":
-        return "Ours"
+        return "CBH"
 
 colors = [
-    '#5DA9D1',  # Blue
-    '#FFA057',  # Vermillion
+    '#4682B4',  # Blue
+    '#E69F00',
     '#4DB99D',  # Bluish green
-    '#E64358',  # Reddish purple
-    '#E69F00',  # Orange
+    '#FF6200',
+    "#6495ED"
+
 ]
 
 
@@ -93,7 +100,7 @@ fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
 # --- Subplot 1: FDR Comparison ---
 ax1.plot(
     alpha_list, alpha_list,
-    label="Target FDR level",
+    label="Target FDR",
     linestyle="--", color=colors[-1], linewidth=1.5, alpha=0.7
 )
 
@@ -104,7 +111,7 @@ for i in range(len(algorithm_list)):
         alpha_list, algorithm_fdr_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=8, linestyle='-', linewidth=1.5, color=colors[i], alpha=0.8
+        markersize=8, linestyle='-', linewidth=3, color=colors[i], alpha=1.0
     )
 
 #ax1.set_title("FDR Comparison", fontsize=large_font_size, weight='bold')
@@ -118,7 +125,7 @@ for i in range(len(algorithm_list)):
         alpha_list, algorithm_power_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=8, linestyle='-', linewidth=1.5, color=colors[i], alpha=0.8
+        markersize=8, linestyle='-', linewidth=3, color=colors[i], alpha=1
     )
 #ax2.set_title("Power comparison", fontsize=large_font_size, weight='bold')
 ax2.set_xlabel("Target FDR Level (α)", fontsize=large_font_size)

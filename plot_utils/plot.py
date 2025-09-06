@@ -1,9 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+import matplotlib.gridspec as gridspec
 
 def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=None, power_std_list=None, column_name="FDR and Power",
-                     figsize=(12, 6), max_cols=3):
+                     figsize=(18, 7), max_cols=3):
     """
        Plot FDR (False Discovery Rate) and Power results for multiple models with optional error bands.
        Parameters:
@@ -69,13 +69,13 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
         ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=6)
         if fdr_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(fdrs - fdr_std_list[i], 0, 1),
-                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.5,
+                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=1,
                           edgecolor='lightblue', facecolor='lightblue')
 
         ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=6)
         if power_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
-                          np.clip(powers + power_std_list[i], 0, 1), alpha=0.5,
+                          np.clip(powers + power_std_list[i], 0, 1), alpha=1,
                           edgecolor='lightpink', facecolor='lightpink')
 
 
@@ -97,7 +97,7 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
     # Hide unused subplots
     for j in range(i + 1, len(axs)):
         axs[j].axis('off')
-
+    plt.savefig("calibration_variance.pdf")
     plt.show()
 
 
@@ -181,31 +181,126 @@ def plot_results_with_budget_save(models, target_fdr_list, fdr_list, power_list,
     plt.show()
 
 
-# Example usage with synthetic dataset
-if __name__ == "__main__":
-    # Generate example dataset for 4 models
-    models = ['GPT-3.5', 'LLaMA-2-7B', 'LLaMA-2-13B', 'OPT-6.7B']
+def plot_selective_evaluation():
+    large_font_size = 20
+    small_font_size = 16
+    target_fdr_list = [5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90]
+    all_fdp_list = [4.56, 9.84, 12.24, 15.50, 17.72, 19.18, 20.23, 21.02, 21.63, 21.62, 22.12]
 
-    # Create target FDRs (same for all models in this example)
-    base_targets = np.linspace(0.05, 0.95, 10)
-    target_fdr_list = [base_targets.copy() for _ in models]
 
-    # Generate synthetic FDR and Power dataset for each model
-    fdr_list = []
-    power_list = []
+    plt.rcParams['axes.edgecolor'] = '#CCCCCC'  # Lighter axis spine color
 
-    for i in range(len(models)):
-        # FDR that roughly tracks target but with some deviation
-        fdrs = base_targets * (0.9 + 0.1 * np.random.randn(len(base_targets)))
-        fdrs = np.clip(fdrs, 0, 1)
+    # Create figure with gridspec for unequal subplot widths
+    fig = plt.figure(figsize=(25, 7))  # Increased figure width slightly
+    gs = gridspec.GridSpec(1, 2, width_ratios=[1, 2])  # Right plot wider than left
+    ax1 = fig.add_subplot(gs[0])
+    ax2 = fig.add_subplot(gs[1])
+    ax1.spines["top"].set_visible(False)
+    ax1.spines["right"].set_visible(False)
+    ax2.spines["top"].set_visible(False)
+    ax2.spines["right"].set_visible(False)
 
-        # Power that increases with target FDR
-        powers = 0.3 + 0.6 * base_targets + 0.1 * np.random.randn(len(base_targets))
-        powers = np.clip(powers, 0, 1)
+    # Left plot (ax1)
+    ax1.plot(
+        target_fdr_list, target_fdr_list,
+        label="Target FDR level",
+        linestyle="--", color='#6495ED', linewidth=1.5, alpha=0.7
+    )
+    ax1.plot(
+        target_fdr_list, all_fdp_list,
+        marker='o',
+        label="Multi-Model Labeling",
+        markersize=8, linestyle='-', linewidth=3, color="#FF6200", alpha=1.0
+    )
+    ax1.set_xlabel("Target FDR (α; %)", fontsize=large_font_size)
+    ax1.set_ylabel("FDR", fontsize=large_font_size)
+    ax1.tick_params(axis='both', labelsize=small_font_size)
+    ax1.legend(loc='upper left', fontsize=small_font_size, framealpha=1, shadow=True)
 
-        fdr_list.append(fdrs)
-        power_list.append(powers)
+    # Right plot (ax2) - Bar chart
+    targets = [10, 15, 20]  # Target levels
+    models = ['Mistral-7B', 'GPT-3.5-turbo', 'GPT-4-turbo']
+    data = {
+        10: [30.6, 12.9, 3.85],
+        15: [38.15, 10.55, 6.09],
+        20: [45.63, 9.02, 6.44]
+    }
 
-    std_list = np.random.uniform(low=0.1, high=0.5, size=(4, 10)) * 0.5
-    # Plot the results
-    plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=std_list, power_std_list=std_list)
+    data1 = {
+        10: [30.50, 36.33, 46.02],
+        15: [37.84, 10.53, 5.04],
+        20: [45.22, 8.50, 6.19]
+    }
+
+    # Prepare data for plotting
+    x = np.arange(len(targets))
+    width = 0.22  # Width of bars
+
+    # Define colors for each model
+    colors = ['#4682B4', "#FF6B6B", '#6495ED']
+    #['#4682B4', "#6495ED", '#FF6B6B']
+    #['#FF6B6B', '#4ECDC4', '#FFD166']
+    # Plot the "Three Together" stacked bar
+    bottoms = np.zeros(len(targets))
+    for i, model in enumerate(models):
+        values = [data[t][i] for t in targets]
+        ax2.bar(x - width, values, width, bottom=bottoms,
+                color=colors[i], alpha=0.8)
+        bottoms += values
+    # Add outline for "Three Together"
+    total_bar = ax2.bar(x - width, [sum(data[t]) for t in targets], width,
+                        label="Three Together", color='none', linewidth=1)
+
+    # Plot individual bars for each model in reverse order
+    bars = [total_bar]
+    for i, model in enumerate(reversed(models)):  # Reverse the order: GPT-4-turbo, GPT-3.5-turbo, Mistral-7B
+        model_idx = len(models) - 1 - i  # Map to original data indices
+        values = [data[t][model_idx] for t in targets]
+        offset = width * i  # GPT-4-turbo at x (i=0), others follow
+        bar = ax2.bar(x + offset, values, width, label=model, color=colors[model_idx], alpha=0.8)
+        bars.append(bar)
+
+    # Customize the plot
+    ax2.set_xlabel('Target FDR (α; %)', fontsize=large_font_size)
+    ax2.set_ylabel('Budget Save (%)', fontsize=large_font_size)
+    #ax2.set_title('Model Performance Across Agreement Levels', fontsize=large_font_size)
+    ax2.set_xticks(x)
+    ax2.set_xticklabels(targets, fontsize=small_font_size)
+    ax2.tick_params(axis='y', labelsize=small_font_size)
+
+    # Create legend with reversed order for "Three Together"
+    handles, labels = ax2.get_legend_handles_labels()
+    # Move "Three Together" to the end
+    three_together_idx = labels.index("Three Together")
+    handles.append(handles.pop(three_together_idx))
+    labels.append(labels.pop(three_together_idx))
+    ax2.legend(handles, labels, title='Models', bbox_to_anchor=(1, 1), loc='upper right', fontsize=small_font_size)
+
+    number_font_size = 12
+    # Add value labels on top of bars
+    for i, target in enumerate(targets):
+        # Three Together
+        total_height = 0
+        for j, value in enumerate([data[target][k] for k in range(len(models))]):
+            ax2.text(i - width, total_height + value / 2, f'{value:.1f}%',
+                     ha='center', va='center', fontsize=number_font_size, color='white')
+            total_height += value
+        ax2.text(i - width, total_height + 1, f'{sum(data[target]):.1f}%',
+                 ha='center', va='bottom', fontsize=small_font_size, color='black')
+
+        # Individual models in reverse order
+        for j, model in enumerate(reversed(models)):
+            model_idx = len(models) - 1 - j
+            value = data[target][model_idx]
+            offset = width * j
+            ax2.text(i + offset, value+2, f'{value:.1f}%',
+                     ha='center', va='center', fontsize=small_font_size, color='black')
+
+    # Add grid for better readability
+    ax2.grid(axis='y', alpha=0.3, linestyle='--')
+    # Adjust layout
+    plt.tight_layout()
+    plt.savefig("multimodel.pdf")
+    plt.show()
+
+#plot_selective_evaluation()
