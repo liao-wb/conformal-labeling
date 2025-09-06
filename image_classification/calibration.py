@@ -27,7 +27,7 @@ val_transform = transforms.Compose([
 ])
 
 cal_test_dataset = torchvision.datasets.ImageFolder(
-    root="/mnt/sharedata/ssd3/common/datasets/imagenet/images/val",
+    root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
     transform=val_transform
 )
 
@@ -79,7 +79,7 @@ with torch.no_grad():
         logits = model(data)
 
         prob = torch.softmax(logits, dim=-1)
-        calibrated_prob = F.softmax(logits, dim=-1)
+        calibrated_prob = F.softmax(logits / T, dim=-1)
 
         y_1 = torch.argmax(prob, dim=-1)
 
