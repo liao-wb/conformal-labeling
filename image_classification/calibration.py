@@ -34,8 +34,8 @@ cal_test_dataset = torchvision.datasets.ImageFolder(
 
 cal_dataset, test_dataset = random_split(cal_test_dataset, [int(0.2 * len(cal_test_dataset)), len(cal_test_dataset) - int(0.2 * len(cal_test_dataset))])
 
-cal_dataloader = DataLoader(cal_dataset, batch_size=args.batch_size, shuffle=False)
-test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False)
+cal_dataloader = DataLoader(cal_dataset, batch_size=args.batch_size, shuffle=False, num_workers=4)
+test_dataloader = DataLoader(test_dataset, batch_size=256, shuffle=False, num_workers=4)
 
 T = torch.tensor(1.0, dtype=torch.float, device=device, requires_grad=True)
 optimizer = torch.optim.SGD([T], lr=0.01)  # Note: T should be in a list
