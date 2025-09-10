@@ -9,7 +9,7 @@ parser.add_argument("--datasets", type=str, default="gpt-4-turbo" ,choices=["vis
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
-parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
+parser.add_argument("--alpha", default=0.05, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
 args = parser.parse_args()
@@ -31,7 +31,7 @@ power_list3 = []
 budget_save_list3 = []
 
 total_fdr_list = []
-alpha_list = [0.05, 0.1, 0.15, 0.2]
+alpha_list = [0.2]
 
 for alpha in alpha_list:
     for _ in range(args.num_trials):
@@ -128,3 +128,4 @@ for alpha in alpha_list:
     print("total fdr")
     print(np.mean(total_fdr_list))
     print(np.mean(budget_save_list1), np.mean(budget_save_list2), np.mean(budget_save_list3))
+    print(np.mean(budget_save_list1) + np.mean(budget_save_list2) + np.mean(budget_save_list3))

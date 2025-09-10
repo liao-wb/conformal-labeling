@@ -185,13 +185,17 @@ def plot_selective_evaluation():
     large_font_size = 20
     small_font_size = 16
     target_fdr_list = [5, 10, 15, 20, 30, 40, 50, 60, 70, 80, 90]
-    all_fdp_list = [4.56, 9.84, 12.24, 15.50, 17.72, 19.18, 20.23, 21.02, 21.63, 21.62, 22.12]
-
-
+    all_fdp_list = [4.56, 9.84, 12.24, 15.50, 18.04, 19.74, 20.88, 21.02, 21.63, 21.62, 22.12]
+    mistral_fdr_list = np.array([0.04302288, 0.09887138, 0.14896379, 0.1980011,  0.26550419, 0.26537725, 0.26519281,
+  0.26479521, 0.26535569, 0.26542994, 0.26536287]) * 100
+    gpt3_fdr_list = np.array([0.04838759, 0.09824116, 0.15003452, 0.19994998, 0.23733174, 0.23706347, 0.23709701,
+                     0.23713533, 0.23681916, 0.23687425, 0.23698683]) * 100
+    gpt4_fdr_list = np.array([0.0437033,  0.10314587, 0.14944392, 0.20050551, 0.2141485,  0.21397844, 0.21423952,
+  0.21392096, 0.21370299, 0.21447186, 0.21368623]) * 100
     plt.rcParams['axes.edgecolor'] = '#CCCCCC'  # Lighter axis spine color
 
     # Create figure with gridspec for unequal subplot widths
-    fig = plt.figure(figsize=(25, 7))  # Increased figure width slightly
+    fig = plt.figure(figsize=(25, 8))  # Increased figure width slightly
     gs = gridspec.GridSpec(1, 2, width_ratios=[1, 2])  # Right plot wider than left
     ax1 = fig.add_subplot(gs[0])
     ax2 = fig.add_subplot(gs[1])
@@ -201,17 +205,34 @@ def plot_selective_evaluation():
     ax2.spines["right"].set_visible(False)
 
     # Left plot (ax1)
-    ax1.plot(
-        target_fdr_list, target_fdr_list,
-        label="Target FDR level",
-        linestyle="--", color='#6495ED', linewidth=1.5, alpha=0.7
-    )
+
+    ax1.plot([0, 100], [0, 100], 'g--', alpha=0.75, zorder=0, label="Target FDR level")
     ax1.plot(
         target_fdr_list, all_fdp_list,
         marker='o',
         label="Multi-Model Labeling",
-        markersize=8, linestyle='-', linewidth=3, color="#FF6200", alpha=1.0
+        markersize=8, linestyle='-', linewidth=3, color="#FF8C00", alpha=1.0
     )
+
+    ax1.plot(
+        target_fdr_list, mistral_fdr_list,
+        marker='o',
+        label="Mistral-7B",
+        markersize=8, linestyle='-', linewidth=3, color='#4682B4', alpha=1.0
+    )
+    ax1.plot(
+        target_fdr_list, gpt3_fdr_list,
+        marker='o',
+        label="GPT-3.5",
+        markersize=8, linestyle='-', linewidth=3, color="#FF6B6B", alpha=1.0
+    )
+    ax1.plot(
+        target_fdr_list, gpt4_fdr_list,
+        marker='o',
+        label="GPT-4",
+        markersize=8, linestyle='-', linewidth=3, color='#6495ED', alpha=1.0
+    )
+
     ax1.set_xlabel("Target FDR (α; %)", fontsize=large_font_size)
     ax1.set_ylabel("FDR", fontsize=large_font_size)
     ax1.tick_params(axis='both', labelsize=small_font_size)
@@ -220,17 +241,20 @@ def plot_selective_evaluation():
     # Right plot (ax2) - Bar chart
     targets = [10, 15, 20]  # Target levels
     models = ['Mistral-7B', 'GPT-3.5-turbo', 'GPT-4-turbo']
-    data = {
+    data0 = {
         10: [30.6, 12.9, 3.85],
-        15: [38.15, 10.55, 6.09],
-        20: [45.63, 9.02, 6.44]
+        15: [45.60, 8.2, 7.87],
+        20: [60.30, 5.48, 7.50]
     }
-
-    data1 = {
-        10: [30.50, 36.33, 46.02],
-        15: [37.84, 10.53, 5.04],
-        20: [45.22, 8.50, 6.19]
+#5: [1.27, 21.1, 0.5],
+#20: [45.63, 9.02, 6.44]
+    data = {
+        10: [31.32, 36.33, 45.86],
+        15: [45.26, 50.26, 60.80],
+        20: [60.15, 68.81, 76.66]
     }
+#5: [1.24, 15.83, 9.5],
+#20: [60.15, 68.81, 76.66]
 
     # Prepare data for plotting
     x = np.arange(len(targets))
@@ -243,12 +267,12 @@ def plot_selective_evaluation():
     # Plot the "Three Together" stacked bar
     bottoms = np.zeros(len(targets))
     for i, model in enumerate(models):
-        values = [data[t][i] for t in targets]
+        values = [data0[t][i] for t in targets]
         ax2.bar(x - width, values, width, bottom=bottoms,
                 color=colors[i], alpha=0.8)
         bottoms += values
     # Add outline for "Three Together"
-    total_bar = ax2.bar(x - width, [sum(data[t]) for t in targets], width,
+    total_bar = ax2.bar(x - width, [sum(data0[t]) for t in targets], width,
                         label="Three Together", color='none', linewidth=1)
 
     # Plot individual bars for each model in reverse order
@@ -270,22 +294,19 @@ def plot_selective_evaluation():
 
     # Create legend with reversed order for "Three Together"
     handles, labels = ax2.get_legend_handles_labels()
-    # Move "Three Together" to the end
-    three_together_idx = labels.index("Three Together")
-    handles.append(handles.pop(three_together_idx))
-    labels.append(labels.pop(three_together_idx))
-    ax2.legend(handles, labels, title='Models', bbox_to_anchor=(1, 1), loc='upper right', fontsize=small_font_size)
+
+    #ax2.legend(handles, labels, bbox_to_anchor=(1, 1), loc='upper left', fontsize=small_font_size)
 
     number_font_size = 12
     # Add value labels on top of bars
     for i, target in enumerate(targets):
         # Three Together
         total_height = 0
-        for j, value in enumerate([data[target][k] for k in range(len(models))]):
+        for j, value in enumerate([data0[target][k] for k in range(len(models))]):
             ax2.text(i - width, total_height + value / 2, f'{value:.1f}%',
                      ha='center', va='center', fontsize=number_font_size, color='white')
             total_height += value
-        ax2.text(i - width, total_height + 1, f'{sum(data[target]):.1f}%',
+        ax2.text(i - width, total_height + 1, f'{sum(data0[target]):.1f}%',
                  ha='center', va='bottom', fontsize=small_font_size, color='black')
 
         # Individual models in reverse order
@@ -303,4 +324,4 @@ def plot_selective_evaluation():
     plt.savefig("multimodel.pdf")
     plt.show()
 
-#plot_selective_evaluation()
+plot_selective_evaluation()

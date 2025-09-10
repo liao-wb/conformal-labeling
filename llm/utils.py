@@ -23,8 +23,8 @@ def get_dataset(args):
         }
     elif args.dataset == "mmlu":
         label_list = ['A', 'B', 'C', 'D']
-        test_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test")
-        val_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation")
+        test_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test-00000-of-00001.parquet")
+        val_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation-00000-of-00001.parquet")
         dataset = concatenate_datasets([val_dataset, test_dataset])
 
         reformat = lambda x: {

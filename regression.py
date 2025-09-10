@@ -49,7 +49,7 @@ for i, ds in enumerate(ds_list):
     selection_size_list = []
     error_list = []
     for j in range(num_trials):
-        fdp, power, selection_size = reg_selection(Y, Yhat, confidence, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args, error=0.05)
+        fdp, power, selection_size = reg_selection(Y, Yhat, confidence, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args, error=0.06)
         fdr_list.append(fdp)
         power_list.append(power)
         selection_size_list.append(selection_size)
