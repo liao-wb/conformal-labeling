@@ -21,23 +21,30 @@ model, preprocess = clip.load(args.model, device=device)
 model.eval()  # Set to evaluation mode
 
 # Get ImageNet class names and tokenize them for CLIP
-imagenet_classes = []
-with open('/mnt/sharedata/ssd_small/common/datasets/imagenet/class_names.txt',
+class_name = []
+if args.dataset == "imagenet":
+    path = '/mnt/sharedata/ssd_small/common/datasets/imagenet/classnames.txt'
+elif args.dataset == "imagenetv2":
+    path = '/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt'
+else:
+    raise NotImplementedError
+
+with open(path,
           'r') as f:  # Adjust path if needed
-    imagenet_classes = [line.strip() for line in f.readlines()]
+    class_name = [line.strip() for line in f.readlines()]
 # Alternatively, if you don't have a class_names.txt file, you can use the 1000-class list from torchvision
-if len(imagenet_classes) != 1000:
-    imagenet_classes = []
+if len(class_name) != 1000:
+    class_name = []
     with open('imagenet_classes.txt', 'r') as f:  # You might need to create this file or get the classes another way
         for line in f:
-            imagenet_classes.append(line.strip())
+            class_name.append(line.strip())
     # If still not available, use a simple placeholder (model will not perform well)
-    if len(imagenet_classes) != 1000:
-        imagenet_classes = [f"class {i}" for i in range(1000)]
+    if len(class_name) != 1000:
+        class_name = [f"class {i}" for i in range(1000)]
 
 # Tokenize the text prompts (class names)
-text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in imagenet_classes]).to(device)
-print(f"Loaded {len(imagenet_classes)} class names.")
+text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in class_name]).to(device)
+print(f"Loaded {len(class_name)} class names.")
 
 # Precompute text features
 with torch.no_grad():
@@ -48,8 +55,24 @@ with torch.no_grad():
 # Note: CLIP's built-in preprocess already includes Resize, CenterCrop, ToTensor, and Normalization
 val_transform = preprocess
 
+if args.dataset == "imagenet":
+    path = '/mnt/sharedata/ssd_small/common/datasets/imagenet/classnames.txt'
+elif args.dataset == "imagenetv2":
+    path = '/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt'
+else:
+    raise NotImplementedError
+
+
+dataset_path = None
+if args.dataset == "imagenet":
+    dataset_path = "/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val"
+elif args.dataset == "imagenetv2":
+    dataset_path = "/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val"
+else:
+    raise NotImplementedError
+
 test_dataset = torchvision.datasets.ImageFolder(
-    root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
+    root=dataset_path,
     transform=val_transform
 )
 

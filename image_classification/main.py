@@ -35,10 +35,17 @@ val_transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-test_dataset = torchvision.datasets.ImageFolder(
-    root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
-    transform=val_transform
-)
+if args.dataset == "imagenet":
+    test_dataset = torchvision.datasets.ImageFolder(
+        root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
+        transform=val_transform
+    )
+elif args.dataset == "imagenetv2":
+    test_dataset = torchvision.datasets.ImageFolder(
+        root="/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val",
+        transform=val_transform
+    )
+else: raise NotImplementedError
 
 dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
