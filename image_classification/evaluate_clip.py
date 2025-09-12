@@ -5,8 +5,7 @@ from torch.utils.data import DataLoader
 import argparse
 import pandas as pd
 import numpy as np
-import clip  # Make sure to install: pip install ftfy regex tqdm git+https://github.com/openai/CLIP.git
-
+import clip
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--dataset", type=str, default="imagenet")
