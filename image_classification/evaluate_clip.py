@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import argparse
 import pandas as pd
 import clip
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
@@ -22,29 +23,25 @@ model.eval()  # Set to evaluation mode
 
 # Get ImageNet class names and tokenize them for CLIP
 class_name = []
+classnames_path = None
 if args.dataset == "imagenet":
-    path = '/mnt/sharedata/ssd_small/common/datasets/imagenet/classnames.txt'
+    classnames_path = '/mnt/sharedata/ssd_small/common/datasets/imagenet/classnames.txt'
 elif args.dataset == "imagenetv2":
-    path = '/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt'
+    classnames_path = '/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt'
 else:
     raise NotImplementedError
 
-with open(path,
-          'r') as f:  # Adjust path if needed
-    class_name = [line.strip() for line in f.readlines()]
-# Alternatively, if you don't have a class_names.txt file, you can use the 1000-class list from torchvision
-if len(class_name) != 1000:
-    class_name = []
-    with open('imagenet_classes.txt', 'r') as f:  # You might need to create this file or get the classes another way
-        for line in f:
-            class_name.append(line.strip())
-    # If still not available, use a simple placeholder (model will not perform well)
-    if len(class_name) != 1000:
-        class_name = [f"class {i}" for i in range(1000)]
+try:
+    with open(classnames_path, 'r') as f:
+        class_name = [line.strip() for line in f.readlines()]
+except FileNotFoundError:
+    print(f"Warning: {classnames_path} not found. Using fallback class names.")
+    class_name = [f"class {i}" for i in range(1000)]
+
+print(f"Loaded {len(class_name)} class names.")
 
 # Tokenize the text prompts (class names)
 text_inputs = torch.cat([clip.tokenize(f"a photo of a {c}") for c in class_name]).to(device)
-print(f"Loaded {len(class_name)} class names.")
 
 # Precompute text features
 with torch.no_grad():
@@ -52,17 +49,9 @@ with torch.no_grad():
     text_features /= text_features.norm(dim=-1, keepdim=True)  # L2 normalize
 
 # Use CLIP's specific preprocessing for the image
-# Note: CLIP's built-in preprocess already includes Resize, CenterCrop, ToTensor, and Normalization
 val_transform = preprocess
 
-if args.dataset == "imagenet":
-    path = '/mnt/sharedata/ssd_small/common/datasets/imagenet/classnames.txt'
-elif args.dataset == "imagenetv2":
-    path = '/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt'
-else:
-    raise NotImplementedError
-
-
+# Get the correct IMAGE dataset path (not classnames path)
 dataset_path = None
 if args.dataset == "imagenet":
     dataset_path = "/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val"
@@ -71,8 +60,10 @@ elif args.dataset == "imagenetv2":
 else:
     raise NotImplementedError
 
+print(f"Loading images from: {dataset_path}")
+
 test_dataset = torchvision.datasets.ImageFolder(
-    root=dataset_path,
+    root=dataset_path,  # ← FIXED: Use the image path, not classnames path
     transform=val_transform
 )
 
@@ -92,7 +83,6 @@ with torch.no_grad():
         image_features /= image_features.norm(dim=-1, keepdim=True)  # L2 normalize
 
         # Calculate similarity (cosine similarity between image and text features)
-        # This gives a [batch_size, 1000] matrix of logit scores
         logit_scale = model.logit_scale.exp()
         logits_per_image = logit_scale * image_features @ text_features.t()
 
@@ -107,14 +97,19 @@ with torch.no_grad():
         all_y_hat.extend(predictions.cpu().numpy())
         all_y_true.extend(targets.cpu().numpy())
 
+# Calculate accuracy for immediate feedback
+accuracy = 100 * (np.array(all_y_hat) == np.array(all_y_true)).mean()
+print(f"Final Accuracy: {accuracy:.2f}%")
+
 # Create DataFrame
 df = pd.DataFrame({
     'Y': all_y_true,
-    'Y_hat': all_y_hat,
+    'Yhat': all_y_hat,
     'confidence': all_confidences,
 })
 
-# Save to CSV. Using the model name with slashes replaced for filename safety.
+# Save to CSV
 model_filename = args.model.replace('/', '_')
-df.to_csv(f'CLIP_{model_filename}_{args.dataset}.csv', index=False)
-print(f"Results saved to CLIP_{model_filename}_{args.dataset}.csv")
+output_file = f'CLIP_{model_filename}_{args.dataset}.csv'
+df.to_csv(output_file, index=False)
+print(f"Results saved to {output_file}")

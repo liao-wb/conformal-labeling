@@ -10,7 +10,7 @@ import numpy as np
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 parser.add_argument("--dataset", type=str, default="imagenet")
-parser.add_argument("--model", type=str, default="resnet152")
+parser.add_argument("--model", type=str, default="resnet34")
 args = parser.parse_args()
 
 # Move models to GPU if available
@@ -18,8 +18,8 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 model_name = args.model
 
-if model_name == "resnet152":
-    model = models.resnet152(pretrained=True).to(device).eval()
+if model_name == "resnet34":
+    model = models.resnet34(pretrained=True).to(device).eval()
 elif model_name == "densenet161":
     model = models.densenet161(pretrained=True).to(device).eval()
 elif model_name == "resnext50":
@@ -76,7 +76,7 @@ with torch.no_grad():
 # Create DataFrame
 df = pd.DataFrame({
     'Y': all_y_true,
-    'Y_hat': all_y_hat,
+    'Yhat': all_y_hat,
     'confidence': all_confidences,
 
 })
