@@ -95,7 +95,13 @@ with torch.no_grad():
         # Store results
         all_confidences.extend(confidences.cpu().numpy())
         all_y_hat.extend(predictions.cpu().numpy())
-        all_y_true.extend(targets.cpu().numpy())
+
+        # Remap targets for ImageNetV2 since folders '0'-'999' are sorted alphabetically, not numerically
+        if args.dataset == "imagenetv2":
+            remapped_targets = [int(test_dataset.classes[t]) for t in targets.cpu().numpy()]
+            all_y_true.extend(remapped_targets)
+        else:
+            all_y_true.extend(targets.cpu().numpy())
 
 # Calculate accuracy for immediate feedback
 accuracy = 100 * (np.array(all_y_hat) == np.array(all_y_true)).mean()
