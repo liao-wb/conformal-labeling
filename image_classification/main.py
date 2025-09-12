@@ -36,7 +36,7 @@ val_transform = transforms.Compose([
 ])
 
 test_dataset = torchvision.datasets.ImageFolder(
-    root="/mnt/sharedata/ssd3/common/datasets/imagenet/images/val",
+    root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
     transform=val_transform
 )
 

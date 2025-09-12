@@ -13,7 +13,7 @@ parser.add_argument("--k_0", type=int, default=3)
 parser.add_argument("--datasets", type=str, default="gpt-4-turbo",)
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=1000, help="Number of trials")
 
 parser.add_argument("--model", default=None, type=str)
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
@@ -35,6 +35,7 @@ else:
     else:
         ds_list = [dataset]
 
+ds_list = ["Qwen3-8B_medmcqa","Qwen3-8B_medmcqa","Qwen3-8B_medmcqa","Qwen3-32B_medmcqa","Qwen3-32B_medmcqa","Qwen3-32B_medmcqa"]
 
 fdr_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
 power_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
@@ -47,7 +48,8 @@ std_budget_save_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
 error_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
 std_error_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
 
-cal_ratio_list = [0.2, 0.2, 0.3, 0.1, 0.2, 0.3]
+cal_ratio_list = [0.05, 0.1, 0.2, 0.05, 0.1, 0.2]
+
 
 for i, ds in enumerate(ds_list):
     Y, Yhat, confidence = get_data(ds)
@@ -84,6 +86,8 @@ for i, ds in enumerate(ds_list):
             #print(f"Mean FDR: {np.mean(fdr_list)}")
             #print(f"Mean Power: {np.mean(power_list)}")
             #print(f"Mean Selection Size: {np.mean(selection_size_list)}")
-print(fdr_array)
+
+
+ds_list = ["Qwen3-8B: cal_ratio=0.05", "Qwen3-8B: cal_ratio=0.1", "Qwen3-8B: cal_ratio=0.2", "Qwen3-32B: cal_ratio=0.05", "Qwen3-32B: cal_ratio=0.1", "Qwen3-32B: cal_ratio=0.2"]
 plot_results(models=ds_list, target_fdr_list=np.array([alpha_list for _ in range(len(ds_list))]), fdr_list=fdr_array, power_list=power_array,fdr_std_list=std_fdr_array, power_std_list=std_power_array,)
 #plot_results_with_budget_save(models=ds_list, target_fdr_list=np.array([alpha_list for _ in range(len(ds_list))]), fdr_list=fdr_array, power_list=power_array,fdr_std_list=std_fdr_array, power_std_list=std_power_array, budget_save_list=budget_save_array, budget_save_std_list=std_budget_save_array)

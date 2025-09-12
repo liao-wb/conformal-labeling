@@ -6,10 +6,10 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="mistral-7b-instruct")
+parser.add_argument("--datasets", type=str, default="Llama-3.1-70B-instruct_medmcqa")
 parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=1000, help="Number of trials")
 parser.add_argument("--alpha", default=0.2, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
@@ -55,9 +55,10 @@ for i, ds in enumerate(ds_list):
     power_array[i] = np.array(power_list)
     selection_size_array[i] = np.array(selection_size_list)
 
-    print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
-    print(f"Mean Overall Error: {np.mean(np.array(error_list)) * 100}")
+    #print(f"Mean Overall Error: {np.mean(np.array(error_list)) * 100}")
     print(f"Mean FDR: {np.mean(fdr_list)}")
+    print(f"Mean Power: {np.mean(power_list)}")
+    print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
 
     print(f"Accuracy:{np.sum(Yhat==Y)/len(Y)}")
     # print()
