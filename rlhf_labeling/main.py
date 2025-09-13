@@ -4,7 +4,7 @@ import argparse
 from tqdm import tqdm
 from vllm.sampling_params import GuidedDecodingParams
 import torch
-from utils import get_dataset, format_example, save_result
+from rlhf_utils import get_dataset, format_example, save_result
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="Qwen3-8B")

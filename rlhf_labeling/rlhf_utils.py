@@ -11,6 +11,7 @@ def fix_note(example):
     return example
 
 def get_dataset(args):
+    print(args.dataset)
     if args.dataset == "tldr":
         label_list = ['A', 'B']
 

@@ -1,4 +1,4 @@
-from utils import get_dataset
+from rlhf_utils import get_dataset
 from datasets import load_dataset
 import argparse
 parser = argparse.ArgumentParser()
