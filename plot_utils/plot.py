@@ -66,13 +66,13 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
         ax.spines['right'].set_color('#D3D3D3')
         ax.spines['top'].set_color('#D3D3D3')
 
-        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=6)
+        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=9)
         if fdr_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(fdrs - fdr_std_list[i], 0, 1),
                           np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=1,
                           edgecolor='lightblue', facecolor='lightblue')
 
-        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=6)
+        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=8)
         if power_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
                           np.clip(powers + power_std_list[i], 0, 1), alpha=1,

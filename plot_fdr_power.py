@@ -11,9 +11,9 @@ parser.add_argument("--_lambda", type=float, default=0.94)
 parser.add_argument("--k_0", type=int, default=10000)
 
 parser.add_argument("--datasets", type=str, default="imagenet",)
-parser.add_argument("--calib_ratio", type=float, default=0.2, help="Calibration ratio")
+parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 
 parser.add_argument("--model", default="Qwen3-32B", type=str)
@@ -125,7 +125,7 @@ for i in range(len(algorithm_list)):
         alpha_list, algorithm_power_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=8, linestyle='-', linewidth=3, color=colors[i], alpha=1
+        markersize=12, linestyle='-', linewidth=3, color=colors[i], alpha=1
     )
 #ax2.set_title("Power comparison", fontsize=large_font_size, weight='bold')
 ax2.set_xlabel("Target FDR Level (α)", fontsize=large_font_size)
