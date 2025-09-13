@@ -55,11 +55,23 @@ elif args.dataset == "imagenetv2":
         transform=val_transform
     )
 
-    # Fix the class_to_idx mapping (make it match original ImageNet order)
-    # test_dataset.classes = list of wnids (e.g., n01440764, n01443537, ...)
+    # test_dataset.class_to_idx gives: {wnid: local_idx}
+    # We need to remap local_idx -> original ImageNet idx
     wnid_to_idx = {wnid: i for i, wnid in enumerate(imagenet_classes)}
-    test_dataset.class_to_idx = wnid_to_idx
-    test_dataset.targets = [wnid_to_idx[test_dataset.classes[label]] for label in test_dataset.targets]
+
+    new_class_to_idx = {}
+    for wnid, local_idx in test_dataset.class_to_idx.items():
+        if wnid not in wnid_to_idx:
+            raise ValueError(f"Wnid {wnid} not found in ImageNet categories!")
+        new_class_to_idx[wnid] = wnid_to_idx[wnid]
+
+    test_dataset.class_to_idx = new_class_to_idx
+
+    # Remap targets from local_idx → original ImageNet idx
+    mapping_local_to_global = {local_idx: new_class_to_idx[wnid]
+                               for wnid, local_idx in test_dataset.class_to_idx.items()}
+    test_dataset.targets = [mapping_local_to_global[label] for label in test_dataset.targets]
+
 
 else:
     raise NotImplementedError
