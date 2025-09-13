@@ -5,36 +5,29 @@ from torch.utils.data import DataLoader
 import torchvision.models as models
 import argparse
 import pandas as pd
-import numpy as np
-import json
 from torchvision.models import ResNet34_Weights, DenseNet161_Weights, ResNeXt50_32X4D_Weights
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
-parser.add_argument("--dataset", type=str, default="imagenet", choices=["imagenet", "imagenetv2"])
-parser.add_argument("--model", type=str, default="resnet34", choices=["resnet34", "densenet161", "resnext50"])
+parser.add_argument("--dataset", type=str, default="imagenet")
+parser.add_argument("--model", type=str, default="resnet34")
 args = parser.parse_args()
 
 # Move models to GPU if available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-# ----- Load model -----
-if args.model == "resnet34":
-    weights = ResNet34_Weights.IMAGENET1K_V1
-    model = models.resnet34(weights=weights).to(device).eval()
-elif args.model == "densenet161":
-    weights = DenseNet161_Weights.IMAGENET1K_V1
-    model = models.densenet161(weights=weights).to(device).eval()
-elif args.model == "resnext50":
-    weights = ResNeXt50_32X4D_Weights.IMAGENET1K_V1
-    model = models.resnext50_32x4d(weights=weights).to(device).eval()
+model_name = args.model
+
+if model_name == "resnet34":
+    model = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1).to(device).eval()
+elif model_name == "densenet161":
+    model = models.densenet161(weights=DenseNet161_Weights.IMAGENET1K_V1).to(device).eval()
+elif model_name == "resnext50":
+    model = models.resnext50_32x4d(weights=ResNeXt50_32X4D_Weights.IMAGENET1K_V1).to(device).eval()
 else:
-    raise NotImplementedError
+    raise NotImplementedError(f"Model {model_name} not supported")
 
-# Get the ImageNet-1k class categories (ordered list of 1000 class labels)
-imagenet_classes = weights.meta["categories"]
-
-# ----- Transforms -----
 val_transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
@@ -42,45 +35,30 @@ val_transform = transforms.Compose([
     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
 ])
 
-# ----- Dataset -----
 if args.dataset == "imagenet":
     test_dataset = torchvision.datasets.ImageFolder(
         root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
         transform=val_transform
     )
-
 elif args.dataset == "imagenetv2":
     test_dataset = torchvision.datasets.ImageFolder(
         root="/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val",
         transform=val_transform
     )
-
-    # Case 1: Folder names are wnids like 'n01440764'
-    if list(test_dataset.class_to_idx.keys())[0].startswith("n"):
-        wnid_to_idx = {wnid: i for i, wnid in enumerate(imagenet_classes)}
-
-        new_class_to_idx = {}
-        for wnid, local_idx in test_dataset.class_to_idx.items():
-            if wnid not in wnid_to_idx:
-                raise ValueError(f"Wnid {wnid} not found in ImageNet categories!")
-            new_class_to_idx[wnid] = wnid_to_idx[wnid]
-
-        mapping_local_to_global = {local_idx: new_class_to_idx[wnid]
-                                   for wnid, local_idx in test_dataset.class_to_idx.items()}
-        test_dataset.targets = [mapping_local_to_global[label] for label in test_dataset.targets]
-        test_dataset.class_to_idx = new_class_to_idx
-
-    # Case 2: Folder names are numeric (already aligned with ImageNet indices)
-    else:
-        print("ImageNetV2 folders are numeric — assuming already in ImageNet order. No remap needed.")
-
-
 else:
-    raise NotImplementedError
+    raise NotImplementedError(f"Dataset {args.dataset} not supported")
+
+# For ImageNetV2, remap labels to match ImageNet class indices (0-999)
+# ImageFolder sorts folder names lexicographically, but folders are named '0' to '999'
+label_remap = None
+if args.dataset == "imagenetv2":
+    class_names = test_dataset.classes  # Sorted list: ['0', '1', '10', ..., '999']
+    label_remap = {sorted_idx: int(class_name) for sorted_idx, class_name in enumerate(class_names)}
+    print(f"Applied label remapping for ImageNetV2. Mapping size: {len(label_remap)}")
 
 dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
 
-# ----- Evaluation -----
+# Initialize lists to store results
 all_confidences = []
 all_y_hat = []
 all_y_true = []
@@ -91,22 +69,31 @@ with torch.no_grad():
 
         logits = model(data)
         prob = torch.softmax(logits, dim=-1)
-
         y = torch.argmax(prob, dim=-1)
         conf = prob[torch.arange(prob.size(0)), y]
 
+        # Store results
         all_confidences.extend(conf.cpu().numpy())
         all_y_hat.extend(y.cpu().numpy())
-        all_y_true.extend(target.cpu().numpy())
 
-# ----- Save results -----
+        # Remap targets if needed
+        batch_targets = target.cpu().numpy()
+        if label_remap is not None:
+            batch_targets = np.array([label_remap[t.item()] for t in target])
+        all_y_true.extend(batch_targets)
+
+# Create DataFrame with correct labels
 df = pd.DataFrame({
     'Y': all_y_true,
     'Yhat': all_y_hat,
     'confidence': all_confidences,
 })
-df.to_csv(f'{args.model}_{args.dataset}.csv', index=False)
 
-# Print quick accuracy check
-acc = np.mean(np.array(all_y_hat) == np.array(all_y_true))
-print(f"Top-1 Accuracy on {args.dataset}: {acc * 100:.2f}%")
+# Save to CSV
+output_file = f'{args.model}_{args.dataset}.csv'
+df.to_csv(output_file, index=False)
+print(f"Results saved to {output_file}")
+
+# Optional: Compute and print top-1 accuracy for verification
+accuracy = np.mean(np.array(all_y_true) == np.array(all_y_hat))
+print(f"Top-1 Accuracy: {accuracy:.4f}")
