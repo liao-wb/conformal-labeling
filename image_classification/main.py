@@ -55,22 +55,24 @@ elif args.dataset == "imagenetv2":
         transform=val_transform
     )
 
-    # test_dataset.class_to_idx gives: {wnid: local_idx}
-    # We need to remap local_idx -> original ImageNet idx
-    wnid_to_idx = {wnid: i for i, wnid in enumerate(imagenet_classes)}
+    # Case 1: Folder names are wnids like 'n01440764'
+    if list(test_dataset.class_to_idx.keys())[0].startswith("n"):
+        wnid_to_idx = {wnid: i for i, wnid in enumerate(imagenet_classes)}
 
-    new_class_to_idx = {}
-    for wnid, local_idx in test_dataset.class_to_idx.items():
-        if wnid not in wnid_to_idx:
-            raise ValueError(f"Wnid {wnid} not found in ImageNet categories!")
-        new_class_to_idx[wnid] = wnid_to_idx[wnid]
+        new_class_to_idx = {}
+        for wnid, local_idx in test_dataset.class_to_idx.items():
+            if wnid not in wnid_to_idx:
+                raise ValueError(f"Wnid {wnid} not found in ImageNet categories!")
+            new_class_to_idx[wnid] = wnid_to_idx[wnid]
 
-    test_dataset.class_to_idx = new_class_to_idx
+        mapping_local_to_global = {local_idx: new_class_to_idx[wnid]
+                                   for wnid, local_idx in test_dataset.class_to_idx.items()}
+        test_dataset.targets = [mapping_local_to_global[label] for label in test_dataset.targets]
+        test_dataset.class_to_idx = new_class_to_idx
 
-    # Remap targets from local_idx → original ImageNet idx
-    mapping_local_to_global = {local_idx: new_class_to_idx[wnid]
-                               for wnid, local_idx in test_dataset.class_to_idx.items()}
-    test_dataset.targets = [mapping_local_to_global[label] for label in test_dataset.targets]
+    # Case 2: Folder names are numeric (already aligned with ImageNet indices)
+    else:
+        print("ImageNetV2 folders are numeric — assuming already in ImageNet order. No remap needed.")
 
 
 else:
