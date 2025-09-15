@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 
 # Define your local path
-data_dir = "/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/Anthropic/hh-rlhf/helpful-base"
+data_dir = "/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/stanfordnlp/SHP/askhr"
 
 # Load each split manually
 def load_jsonl_file(file_path):
@@ -14,18 +14,14 @@ def load_jsonl_file(file_path):
 
 # Load all splits
 dataset = {
-    'train': load_jsonl_file(Path(data_dir) / 'train.jsonl'),
-    'test': load_jsonl_file(Path(data_dir) / 'test.jsonl'),
+    'test': load_jsonl_file(Path(data_dir) / 'test.json'),
 }
 
-print(f"Train samples: {len(dataset['train'])}")
 print(f"Test samples: {len(dataset['test'])}")
-
 
 
 print()
 for key, value in dataset["test"][1].items():
     print(key)
-    print("Afer key")
     print(value)
     print("-----")

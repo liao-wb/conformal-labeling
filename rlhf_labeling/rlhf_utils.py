@@ -94,6 +94,33 @@ def get_dataset(args):
         dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
 
         reformat = lambda x: reformat_hh_rlhf(x)
+    elif args.dataset == "shp":
+        label_list = ["A", "B"]
+        data_dir = "/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/stanfordnlp/SHP"
+
+        data_files = []
+        subreddits = [d for d in os.listdir(data_dir)
+                      if os.path.isdir(os.path.join(data_dir, d)) and not d.startswith('.')]
+
+        for subreddit in subreddits:
+            subreddit_path = os.path.join(data_dir, subreddit)
+            for split in ['test.jsonl', 'validation.jsonl']:
+                file_path = os.path.join(subreddit_path, split)
+                if os.path.exists(file_path):
+                    data_files.append(file_path)
+
+        if not data_files:
+            raise ValueError("No SHP data files found!")
+
+        # Load all files at once
+        dataset = load_dataset('json', data_files=data_files, split='train')
+        reformat = lambda x: {
+            'question': x['history'],
+            'choices': [x['human_ref_A'], x['human_ref_B']],
+            'answer': "A" if x["labels"] == 0 else "B",
+            'label': label_list,
+        }
+
     else:
         raise NotImplementedError
 
@@ -142,6 +169,9 @@ def format_example(example, dataset):
         prompt = 'You are given a post and several candidate summaries. Chooce the summary that a human would prefer. Response with ONLY the letter of the correct options (A,B,C, ...) Do not include any explanation or extra text. \n'
     elif dataset == "hh-rlhf":
         prompt = 'Evaluate two assistant responses to a human query. Choose the one that is more helpful, harmless, and aligned with human preferences. Respond with ONLY "A" or "B".\n\n'
+    elif dataset == "shp":
+        prompt = 'You are given a question from an online forum and two candidate answers. Choose the answer that is more helpful, informative, and valuable according to human preferences. Respond with ONLY "A" or "B".\n\n'
+
     question = example['question']
     label = example['label']
     answer = example['answer']
