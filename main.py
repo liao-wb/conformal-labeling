@@ -6,7 +6,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="Gemma-3-27B-Instruct_hh-rlhf_test")
+parser.add_argument("--datasets", type=str, default="Llama-3.1-8B-Instruct_shp")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")

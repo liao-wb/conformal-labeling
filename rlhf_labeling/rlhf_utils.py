@@ -88,11 +88,11 @@ def get_dataset(args):
         full_dataset = load_dataset(
             "json",
             data_files={
-                #'train':  '/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/train.jsonl',
+                'train':  '/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/train.jsonl',
             'test': "/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/test.jsonl",}
         )
-        #dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
-        dataset = full_dataset["test"]
+        dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
+        #dataset = full_dataset["test"]
         reformat = lambda x: reformat_hh_rlhf(x)
     elif args.dataset == "shp":
         label_list = ["A", "B"]
