@@ -96,7 +96,7 @@ def get_dataset(args):
         reformat = lambda x: reformat_hh_rlhf(x)
     elif args.dataset == "shp":
         label_list = ["A", "B"]
-        data_dir = "/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/stanfordnlp/SHP"
+        data_dir = "/mnt/sharedata/hdd/users/huanghp/SHP"
 
         data_files = []
         subreddits = [d for d in os.listdir(data_dir)
