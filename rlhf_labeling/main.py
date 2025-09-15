@@ -26,7 +26,7 @@ print()
 # vLLM Setup
 model = LLM(
     model=model_path,
-    gpu_memory_utilization=0.5, max_model_len=1024 * 5,
+    gpu_memory_utilization=0.5, max_model_len=1024 * 10,
     tensor_parallel_size=args.tensor_parallel_size,
 )
 
