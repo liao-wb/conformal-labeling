@@ -113,7 +113,7 @@ def get_dataset(args):
             raise ValueError("No SHP data files found!")
 
         # Load all files at once
-        dataset = load_dataset('json', data_files=data_files)
+        dataset = load_dataset('json', data_files=data_files, split="train")
         reformat = lambda x: {
             'question': x['history'],
             'choices': [x['human_ref_A'], x['human_ref_B']],
