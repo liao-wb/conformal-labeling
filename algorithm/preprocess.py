@@ -4,7 +4,7 @@ import json
 
 
 def get_data(dataset):
-    if dataset == "gpt-3.5-turbo" or dataset == "gpt-4-turbo" or dataset == "mistral-7b-instruct":
+    if dataset == "gpt-3.5-turbo" or dataset == "gpt-4-turbo" or dataset == "mistral-7b-instruct" or dataset == "Qwen3-8B":
         Y, Yhat, confidence, _ = get_preference_data(dataset)
     else:
         data = pd.read_csv("./datasets/" + dataset + '.csv')
@@ -39,9 +39,12 @@ def get_preference_data(dataset):
 
     # print(data[0]) # Print the first object
     data = pd.DataFrame(data)
-
-    Y = data["preferences"].to_numpy()
-    Y = np.array([y['human'] for y in Y]) - 1
+    print(data)
+    if dataset == "Qwen3-8B":
+        Y = data["choice"]
+    else:
+        Y = data["preferences"].to_numpy()
+        Y = np.array([y['human'] for y in Y]) - 1
     probs = data["probs"]
     # Y_hat = np.argmax(probs, axis=-1)
     Y_hat = np.array([np.argmax(prob, axis=-1) for prob in probs])

@@ -66,16 +66,16 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
         ax.spines['right'].set_color('#D3D3D3')
         ax.spines['top'].set_color('#D3D3D3')
 
-        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=9)
+        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=10, alpha=0.7)
         if fdr_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(fdrs - fdr_std_list[i], 0, 1),
-                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=1,
+                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.7,
                           edgecolor='lightblue', facecolor='lightblue')
 
-        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=8)
+        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=10, alpha=0.7)
         if power_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
-                          np.clip(powers + power_std_list[i], 0, 1), alpha=1,
+                          np.clip(powers + power_std_list[i], 0, 1), alpha=0.7,
                           edgecolor='lightpink', facecolor='lightpink')
 
 
@@ -97,7 +97,8 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
     # Hide unused subplots
     for j in range(i + 1, len(axs)):
         axs[j].axis('off')
-    plt.savefig("calibration_variance.pdf")
+
+    plt.savefig("calibration_variance.pdf", dpi=400)
     plt.show()
 
 

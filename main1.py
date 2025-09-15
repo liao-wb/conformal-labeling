@@ -13,7 +13,7 @@ parser.add_argument("--k_0", type=int, default=3)
 parser.add_argument("--datasets", type=str, default="gpt-4-turbo",)
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=1000, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=1000  , help="Number of trials")
 
 parser.add_argument("--model", default=None, type=str)
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")

@@ -1,22 +1,31 @@
-from rlhf_utils import get_dataset
-from datasets import load_dataset
-import argparse
-parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", default="tl;dr")
-args = parser.parse_args()
+import json
+from pathlib import Path
 
-get_dataset(args)
-ds = load_dataset(path="json",
-                  data_files="/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/comparisons/batch19.json")
+# Define your local path
+data_dir = "/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/Anthropic/hh-rlhf/helpful-base"
 
-i = 100
-print(ds)
-print(ds["train"]["info"][i]["post"])
+# Load each split manually
+def load_jsonl_file(file_path):
+    data = []
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for line in f:
+            data.append(json.loads(line.strip()))
+    return data
+
+# Load all splits
+dataset = {
+    'train': load_jsonl_file(Path(data_dir) / 'train.jsonl'),
+    'test': load_jsonl_file(Path(data_dir) / 'test.jsonl'),
+}
+
+print(f"Train samples: {len(dataset['train'])}")
+print(f"Test samples: {len(dataset['test'])}")
+
+
+
 print()
-print()
-print(1)
-print(ds["train"]["summaries"][i][0]["text"])
-print(2)
-print(ds["train"]["summaries"][i][1]["text"])
-print()
-print(ds["train"]["choice"][i])
+for key, value in dataset["test"][1].items():
+    print(key)
+    print("Afer key")
+    print(value)
+    print("-----")
