@@ -85,11 +85,11 @@ def get_dataset(args):
         }
     elif args.dataset == "hh-rlhf":
         label_list = ["A", "B"]
-        dataset = {
-            # 'train':  'train.jsonl',
-            'test': "test.jsonl",
+        full_dataset = {
+             'train':  '/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/train.jsonl',
+            'test': "/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/test.jsonl",
         }
-        dataset = dataset["test"]
+        dataset = concatenate_datasets([full_dataset["validation"], full_dataset["test"]])
 
         reformat = lambda x: reformat_hh_rlhf(x)
     else:
