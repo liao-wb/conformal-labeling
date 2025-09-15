@@ -89,7 +89,7 @@ def get_dataset(args):
              'train':  '/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/train.jsonl',
             'test': "/mnt/sharedata/hdd/users/huanghp/hh-rlhf/helpful-base/test.jsonl",
         }
-        dataset = concatenate_datasets([full_dataset["validation"], full_dataset["test"]])
+        dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
 
         reformat = lambda x: reformat_hh_rlhf(x)
     else:
