@@ -1,83 +1,86 @@
 import matplotlib.pyplot as plt
 import numpy as np
+from algorithm.select_alg import selection, get_p_values
+from algorithm.preprocess import get_data
+import argparse
+import seaborn as sns
 
-# Data
-targets = [80, 85, 90, 95]  # Target levels
-models = ['Mistral-7B', 'GPT-3.5-turbo', 'GPT-4-turbo']
-data = {
-    80: [45.9, 12.8, 19.2],
-    85: [26.0, 18.5, 23.1],
-    90: [15.7, 24.2, 55.7],
-    95: [14.5, 7.0, 28.9]
-}
 
-# Prepare data for plotting
-x = np.arange(len(targets))
-width = 0.2  # Width of bars
-spacing_factor = 1  # Spacing between bars
+parser = argparse.ArgumentParser()
+parser.add_argument("--datasets", type=str, default="imagenet")
+parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
+parser.add_argument("--random", default="True", choices=["True", "False"])
+parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
+parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
+parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
+parser.add_argument("--temperature", type=float, default=1, help="Temperature")
+args = parser.parse_args()
 
-fig, ax = plt.subplots(figsize=(16, 8))  # Figure size
+dataset = args.datasets
+if dataset == "vision":
+    ds_list = ["imagenet", "imagenetv2"]
+elif dataset == "text":
+    ds_list = ['bias', 'stance', 'misinfo']
+elif dataset == "all":
+    ds_list = ["imagenet", "imagenetv2", 'stance', 'misinfo', 'bias']
+else:
+    ds_list = [dataset]
 
-# Define colors for each model
-colors = ['#FF6B6B', '#4ECDC4', '#FFD166']
+fdr_array = np.zeros(shape=(len(ds_list), args.num_trials))
+power_array = np.zeros(shape=(len(ds_list), args.num_trials))
+selection_size_array = np.zeros(shape=(len(ds_list), args.num_trials))
 
-# Plot the "Three Together" stacked bar
-bottoms = np.zeros(len(targets))
-for i, model in enumerate(models):
-    values = [data[t][i] for t in targets]
-    ax.bar(x - width, values, width, bottom=bottoms,
-           color=colors[i], alpha=0.8)
-    bottoms += values
-# Add outline for "Three Together"
-total_bar = ax.bar(x - width, [sum(data[t]) for t in targets], width,
-                   label="Three Together", color='none', edgecolor='black', linewidth=1)
+for i, ds in enumerate(ds_list):
+    Y, Yhat, confidence = get_data(ds)
+    n = len(Y)
 
-# Plot individual bars for each model in reverse order
-bars = [total_bar]
-for i, model in enumerate(reversed(models)):  # Reverse the order: GPT-4-turbo, GPT-3.5-turbo, Mistral-7B
-    model_idx = len(models) - 1 - i  # Map to original data indices
-    values = [data[t][model_idx] for t in targets]
-    offset = width * i  # GPT-4-turbo at x (i=0), others follow
-    bar = ax.bar(x + offset, values, width, label=model, color=colors[model_idx], alpha=0.8)
-    bars.append(bar)
+    alpha = args.alpha
+    num_trials = args.num_trials
 
-# Customize the plot
-ax.set_xlabel('Target Human Agreement (1 - α; %)', fontsize=12, fontweight='bold')
-ax.set_ylabel('Evaluator Composition (%)', fontsize=12, fontweight='bold')
-ax.set_title('Model Performance Across Agreement Levels', fontsize=14, fontweight='bold')
-ax.set_xticks(x)
-ax.set_xticklabels(targets)
+    n_samples = len(Y)
+    n_calib = int(n_samples * args.calib_ratio)
+    n_test = n_samples - n_calib
+    cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
 
-# Create legend with reversed order for "Three Together"
-handles, labels = ax.get_legend_handles_labels()
-# Move "Three Together" to the end
-three_together_idx = labels.index("Three Together")
-handles.append(handles.pop(three_together_idx))
-labels.append(labels.pop(three_together_idx))
-ax.legend(handles, labels, title='Models', bbox_to_anchor=(1.05, 1), loc='upper right')
+    p_values, y_test, y_test_hat, t = get_p_values(Y, Yhat, confidence, cal_indices, alpha, args, calib_ratio=args.calib_ratio, random=True)
+    p_0 = p_values[y_test != y_test_hat]
+    p_1 = p_values[y_test == y_test_hat]
 
-# Add value labels on top of bars
-for i, target in enumerate(targets):
-    # Three Together
-    total_height = 0
-    for j, value in enumerate([data[target][k] for k in range(len(models))]):
-        ax.text(i - width, total_height + value / 2, f'{value:.1f}%',
-                ha='center', va='center', fontsize=9, color='black')
-        total_height += value
-    ax.text(i - width, total_height + 1, f'{sum(data[target]):.1f}%',
-            ha='center', va='bottom', fontsize=9, color='black')
+    sns.set_style("white")
+    plt.figure(figsize=(4, 3.5))
 
-    # Individual models in reverse order
-    for j, model in enumerate(reversed(models)):
-        model_idx = len(models) - 1 - j
-        value = data[target][model_idx]
-        offset = width * j
-        ax.text(i + offset, value / 2, f'{value:.1f}%',
-                ha='center', va='center', fontsize=9, color='black')
+    # 绘制填充的KDE
+    sns.kdeplot(p_0, color='#7F7F7F', fill=True, alpha=0.2, linewidth=0)
+    sns.kdeplot(p_1, color='#2E8B57', fill=True, alpha=0.2, linewidth=0)
 
-# Add grid for better readability
-ax.grid(axis='y', alpha=0.3, linestyle='--')
+    # 绘制轮廓线
+    sns.kdeplot(p_0, color='#7F7F7F', fill=False, linewidth=1.5, label='p_0')
+    sns.kdeplot(p_1, color='#2E8B57', fill=False, linewidth=1.5, label='p_1')
 
-# Adjust layout and display
-plt.tight_layout()
-plt.show()
+    # 获取当前图形的线条
+    lines = plt.gca().get_lines()
+
+    # 检查是否有足够的线条
+    if len(lines) >= 2:
+        # 获取KDE数据
+        x0, y0 = lines[0].get_data()  # p_0的轮廓线
+        x1, y1 = lines[1].get_data()  # p_1的轮廓线
+
+        # 只为绿色的p_1在t左侧添加阴影
+        left_mask_1 = x1 <= t
+
+        # 为p_1添加黑色阴影线条
+        plt.vlines(x1[left_mask_1][::2], 0, y1[left_mask_1][::2],
+                   color='black', alpha=0.6, linewidth=0.8)
+
+    # 添加垂直线
+    plt.axvline(t, color='#D62728', linestyle='--', linewidth=2.0, alpha=0.9)
+
+    # 移除坐标轴和装饰
+    plt.gca().set_frame_on(False)
+    plt.xticks([])
+    plt.yticks([])
+    plt.ylabel("")
+    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
+    plt.savefig("right_fig.pdf", dpi=300)
+    plt.show()

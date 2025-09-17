@@ -13,7 +13,7 @@ parser.add_argument("--k_0", type=int, default=10000)
 parser.add_argument("--datasets", type=str, default="imagenet",)
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 
 parser.add_argument("--model", default="Qwen3-32B", type=str)
@@ -80,7 +80,7 @@ def label_map(x):
     elif x == "qbh":
         return "Quantile BH"
     elif x == "cbh":
-        return "CBH"
+        return "Ours"
 
 colors = [
     '#4682B4',  # Blue
@@ -94,7 +94,7 @@ colors = [
 
 large_font_size = 20
 small_font_size = 16
-plt.rcParams['axes.edgecolor'] = '#CCCCCC'  # Lighter axis spine color
+# plt.rcParams['axes.edgecolor'] = '#CCCCCC'  # Lighter axis spine color
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
 
 # --- Subplot 1: FDR Comparison ---
@@ -104,14 +104,14 @@ ax1.plot(
     linestyle="--", color=colors[-1], linewidth=1.5, alpha=0.7
 )
 
-markers = ['o', 's', 'D', '^', 'v', 'p', '*', 'X']
+markers = ['o', '^', 'D', 's', 'v', 'p', '*', 'X']
 
 for i in range(len(algorithm_list)):
     ax1.plot(
         alpha_list, algorithm_fdr_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=8, linestyle='-', linewidth=3, color=colors[i], alpha=1.0
+        markersize=14, linestyle='-', linewidth=3, color=colors[i], alpha=0.8
     )
 
 #ax1.set_title("FDR Comparison", fontsize=large_font_size, weight='bold')
@@ -125,7 +125,7 @@ for i in range(len(algorithm_list)):
         alpha_list, algorithm_power_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=12, linestyle='-', linewidth=3, color=colors[i], alpha=1
+        markersize=14, linestyle='-', linewidth=3, color=colors[i], alpha=0.8
     )
 #ax2.set_title("Power comparison", fontsize=large_font_size, weight='bold')
 ax2.set_xlabel("Target FDR Level (α)", fontsize=large_font_size)

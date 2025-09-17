@@ -72,7 +72,7 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
                           np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.7,
                           edgecolor='lightblue', facecolor='lightblue')
 
-        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=10, alpha=0.7)
+        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=15, alpha=0.7)
         if power_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
                           np.clip(powers + power_std_list[i], 0, 1), alpha=0.7,
