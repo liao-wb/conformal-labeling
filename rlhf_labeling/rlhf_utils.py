@@ -1,4 +1,4 @@
-from datasets import load_dataset, concatenate_datasets, load_from_disk, Sequence, Value, Features, Dataset
+from datasets import load_dataset, concatenate_datasets, load_from_disk, Sequence, Value, Features, Dataset, DatasetDict
 import re
 import pickle
 import pandas as pd
@@ -124,6 +124,35 @@ def get_dataset(args):
                 'question': x['content'],
                 'choices': label_map_list,
                 'answer': label_list[x['label']],
+                'label': label_list
+            }
+    elif args.dataset == "misinformation":
+        label_list = ['A', 'B']
+
+        # DBpedia 的类别映射（完整的14个类别）
+        label_map_list = [
+            "real", "misinfo"
+        ]
+
+        train_df = pd.read_csv("/mnt/sharedata/hdd/users/huanghp/val.tsv", sep='\t')
+        test_df = pd.read_csv("/mnt/sharedata/hdd/users/huanghp//test.tsv", sep='\t')
+
+        # 转换为 Hugging Face Dataset
+        train_dataset = Dataset.from_pandas(train_df)
+        test_dataset = Dataset.from_pandas(test_df)
+
+        # 创建 DatasetDict
+        full_dataset = DatasetDict({
+            "train": train_dataset,
+            "test": test_dataset
+        })
+
+        dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
+
+        reformat = lambda x: {
+                'question': x['headline'],
+                'choices': label_map_list,
+                'answer': "A" if x["fold_label"] == "real" else "B",
                 'label': label_list
             }
 
@@ -274,6 +303,20 @@ def format_example(example, dataset):
         Respond with ONLY the letter (A-N) of the correct category. Do not include any explanation.\n\n'''
     elif dataset == "stance":
         prompt = "You are given a statement about climate change. Determine the stance that a human would take towards this statement. Choose from: A) agrees, B) neutral, or C) disagrees. Respond with ONLY the letter (A, B, or C) of the correct stance. Do not include any explanation.\n\n"
+    elif dataset == "misinformation":
+        prompt = '''You are a fact-checking assistant. You are given a news headline as the question. Your task is to classify whether the headline contains factual information or misinformation.
+Important guidelines:
+- "real": The headline presents accurate, verifiable factual information
+- "misinfo": The headline contains false, misleading, or unverified claims
+
+Consider the source, plausibility, and potential for misinformation.
+
+Choose from: 
+A) real
+B) misinfo
+
+Respond with ONLY the letter (A or B) of the correct option. Do not include any explanation or additional text.
+'''
 
     question = example['question']
     label = example['label']
