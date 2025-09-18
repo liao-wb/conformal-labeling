@@ -134,8 +134,8 @@ def get_dataset(args):
             "real", "misinfo"
         ]
 
-        train_df = pd.read_csv("/mnt/sharedata/hdd/users/huanghp/val.tsv", sep='\t')
-        test_df = pd.read_csv("/mnt/sharedata/hdd/users/huanghp//test.tsv", sep='\t')
+        train_df = pd.read_csv("/mnt/sharedata/hdd/users/huanghp/misinformation/val.tsv", sep='\t')
+        test_df = pd.read_csv("/mnt/sharedata/hdd/users/huanghp/misinformation/test.tsv", sep='\t')
 
         # 转换为 Hugging Face Dataset
         train_dataset = Dataset.from_pandas(train_df)
