@@ -20,7 +20,7 @@ def get_data(dataset):
 
 def get_preference_data(dataset):
     calib_file_path = "preference_data/" + dataset + ".calibration.jsonl"
-    test_file_path = "preference_data/" + dataset + ".test.jsonl"
+    test_file_path = "preference_data/" + dataset + ".1"
 
 
     data = []
