@@ -99,6 +99,35 @@ def get_dataset(args):
             'answer': label_list[x['label']],
             'label': label_list
         }
+    elif args.dataset == "dbpedia":
+        label_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
+
+        # DBpedia 的类别映射（完整的14个类别）
+        label_map_list = [
+            "Company", "Educational Institution", "Artist", "Athlete",
+            "Office Holder", "Mean of Transportation", "Building",
+            "Natural Place", "Village", "Animal", "Plant",
+            "Album", "Film", "Written Work"
+        ]
+
+
+        full_dataset = load_dataset(
+            "parquet",
+            data_files={
+                "test": "/mnt/sharedata/hdd/users/huanghp/dbpedia/dbpedia_14/test-00000-of-00001.parquet"
+            }
+        )
+
+        dataset = full_dataset["test"]
+
+        reformat = lambda x: {
+                'question': x['content'],
+                'choices': label_map_list,
+                'answer': label_list[x['label']],
+                'label': label_list
+            }
+
+
     elif args.dataset == "hh-rlhf-helpful":
         label_list = ["A", "B"]
         full_dataset = load_dataset(
@@ -202,7 +231,9 @@ def format_example(example, dataset):
         prompt = 'You are given a question from an online forum and two candidate answers. Choose the answer that is more helpful, informative, and valuable according to human preferences. Respond with ONLY "A" or "B".\n\n'
     elif dataset == "ag_news":
         prompt = 'You are given a news article. Classify it into the correct category. Respond with ONLY the letter (A, B, C, or D) of the correct option.\n\n'
-
+    elif dataset == "dbpedia":
+        prompt = '''You are given a text excerpt from Wikipedia. Classify it into the correct category based on its content.
+        Respond with ONLY the letter (A-N) of the correct category. Do not include any explanation.\n\n'''
     question = example['question']
     label = example['label']
     answer = example['answer']
