@@ -6,7 +6,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="Qwen3-32B_ag_news")
+parser.add_argument("--datasets", type=str, default="Llama-3.1-8B_stance")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
@@ -31,7 +31,6 @@ selection_size_array = np.zeros(shape=(len(ds_list), args.num_trials))
 
 for i, ds in enumerate(ds_list):
     Y, Yhat, confidence = get_data(ds)
-    n = len(Y)
 
     alpha = args.alpha
     num_trials = args.num_trials

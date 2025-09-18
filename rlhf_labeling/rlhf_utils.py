@@ -155,7 +155,7 @@ def get_dataset(args):
 
         # 应用函数
         df["label"] = df.apply(get_final_label, axis=1)
-        map_answer = {"agrees": 0, "neutral": 1, "disagrees": 2}
+        map_answer = {"agrees": "A", "neutral": "B", "disagrees": "C"}
 
         # 转换为Hugging Face Dataset格式
         dataset = Dataset.from_pandas(df)
