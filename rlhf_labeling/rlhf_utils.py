@@ -152,7 +152,7 @@ def get_dataset(args):
         reformat = lambda x: {
                 'question': x['headline'],
                 'choices': label_map_list,
-                'answer': "A" if x["fold_label"] == "real" else "B",
+                'answer': "A" if x["gold_label"] == "real" else "B",
                 'label': label_list
             }
 
