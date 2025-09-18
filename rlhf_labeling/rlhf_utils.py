@@ -1,4 +1,4 @@
-from datasets import load_dataset, concatenate_datasets, load_from_disk, Sequence, Value, Features
+from datasets import load_dataset, concatenate_datasets, load_from_disk, Sequence, Value, Features, Dataset
 import re
 import pickle
 import pandas as pd
@@ -127,6 +127,44 @@ def get_dataset(args):
                 'label': label_list
             }
 
+    elif args.dataset == "stance":
+        label_list = ["A", "B", "C"]
+        file_path = "/mnt/sharedata/hdd/users/huanghp/stance/GWSD.tsv"
+        df = pd.read_csv(file_path, sep='\t')
+
+        # 初始化计数列
+        df["agrees"] = 0
+        df["neutral"] = 0
+        df["disagrees"] = 0
+
+        # 统计每个worker的标注
+        for i in range(8):
+            df["agrees"] += (df[f"worker_{i}"] == 'agrees').astype(int)
+            df["neutral"] += (df[f"worker_{i}"] == 'neutral').astype(int)
+            df["disagrees"] += (df[f"worker_{i}"] == 'disagrees').astype(int)
+
+        # 确定最终标签（多数投票）
+        def get_final_label(row):
+            counts = {
+                'agrees': row['agrees'],
+                'neutral': row['neutral'],
+                'disagrees': row['disagrees']
+            }
+            # 返回数量最多的标签
+            return max(counts.items(), key=lambda x: x[1])[0]
+
+        # 应用函数
+        df["label"] = df.apply(get_final_label, axis=1)
+        map_answer = {"agrees": 0, "neutral": 1, "disagrees": 2}
+
+        # 转换为Hugging Face Dataset格式
+        dataset = Dataset.from_pandas(df)
+        reformat = lambda x: {
+            'question': x['sentence'],
+            'choices': ["agrees", "neutral", "disagrees"],
+            'answer': map_answer[x['label']],
+            'label': label_list
+        }
 
     elif args.dataset == "hh-rlhf-helpful":
         label_list = ["A", "B"]
@@ -234,6 +272,9 @@ def format_example(example, dataset):
     elif dataset == "dbpedia":
         prompt = '''You are given a text excerpt from Wikipedia. Classify it into the correct category based on its content.
         Respond with ONLY the letter (A-N) of the correct category. Do not include any explanation.\n\n'''
+    elif dataset == "stance":
+        prompt = "You are given a statement about climate change. Determine the stance that a human would take towards this statement. Choose from: A) agrees, B) neutral, or C) disagrees. Respond with ONLY the letter (A, B, or C) of the correct stance. Do not include any explanation.\n\n"
+
     question = example['question']
     label = example['label']
     answer = example['answer']

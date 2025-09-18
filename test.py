@@ -1,20 +1,39 @@
-from datasets import Dataset, DatasetDict
+from datasets import Dataset
 import pandas as pd
+import numpy as np
 
-# 先用pandas读取，然后转换为Hugging Face的Dataset格式
-train_df = pd.read_parquet('/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/dbpedia/dbpedia_14/train-00000-of-00001.parquet')
-test_df = pd.read_parquet('/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/dbpedia/dbpedia_14/test-00000-of-00001.parquet')
+file_path = "/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/data/stance/GWSD.tsv"
+df = pd.read_csv(file_path, sep='\t')
 
-# 转换为Dataset格式
-train_dataset = Dataset.from_pandas(train_df)
-test_dataset = Dataset.from_pandas(test_df)
+# 初始化计数列
+df["agrees"] = 0
+df["neutral"] = 0
+df["disagrees"] = 0
 
-# 创建DatasetDict（与Hugging Face transformers兼容的格式）
-dataset = DatasetDict({
-    'train': train_dataset,
-    'test': test_dataset
-})
+# 统计每个worker的标注
+for i in range(8):
+    df["agrees"] += (df[f"worker_{i}"] == 'agrees').astype(int)
+    df["neutral"] += (df[f"worker_{i}"] == 'neutral').astype(int)
+    df["disagrees"] += (df[f"worker_{i}"] == 'disagrees').astype(int)
 
-# 使用数据集
-print(dataset['train'][0])  # 查看第一条训练数据
-print(dataset["train"])
+# 确定最终标签（多数投票）
+def get_final_label(row):
+    counts = {
+        'agrees': row['agrees'],
+        'neutral': row['neutral'],
+        'disagrees': row['disagrees']
+    }
+    # 返回数量最多的标签
+    return max(counts.items(), key=lambda x: x[1])[0]
+
+# 应用函数
+df["label"] = df.apply(get_final_label, axis=1)
+
+# 转换为Hugging Face Dataset格式
+dataset = Dataset.from_pandas(df)
+
+print(f"数据集大小: {len(dataset)}")
+print(f"特征: {dataset.features}")
+print("\n第一个样本:")
+print(dataset[0]["sentence"])
+print(dataset[0]["label"])
