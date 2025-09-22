@@ -5,7 +5,7 @@ import argparse
 from tqdm import tqdm
 from vllm.sampling_params import GuidedDecodingParams
 import torch
-from utils import  format_example, save_result
+from utils import  format_example, save_result, get_dataset
 from torch.utils.data import TensorDataset, DataLoader
 import torch.nn as nn
 import torch
@@ -17,27 +17,35 @@ parser.add_argument("--tensor_parallel_size", type=int, default=4)
 parser.add_argument("--batch_size", type=int, default=32)
 args = parser.parse_args()
 
+# label_list = ['A', 'B', 'C', 'D']
+# label_map = {"A":0, "B":1, "C":2, "D":3}
+#
+# full_dataset = load_dataset(
+#     "parquet",
+#     data_files={
+#         "test": "/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test-00000-of-00001.parquet",
+#         "validation": "/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation-00000-of-00001.parquet"}
+# )
+# cal_dataset = full_dataset["validation"]
+# test_dataset = full_dataset["test"]
+#
+# reformat = lambda x: {
+#     'question': x['question'],
+#     'choices': x['choices'],
+#     'answer': label_list[x['answer']],
+#     'label': label_list[:len(x["choices"])]
+# }
+#
+# cal_dataset = [reformat(data) for data in cal_dataset]
+# test_dataset = [reformat(data) for data in test_dataset]
+
+
+dataset, label_list = get_dataset(args.dataset)
+cal_dataset = dataset[:int(0.2 * len(dataset))]
+test_dataset = dataset[int(0.2 * len(dataset)):]
 label_list = ['A', 'B', 'C', 'D']
 label_map = {"A":0, "B":1, "C":2, "D":3}
 
-full_dataset = load_dataset(
-    "parquet",
-    data_files={
-        "test": "/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test-00000-of-00001.parquet",
-        "validation": "/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation-00000-of-00001.parquet"}
-)
-cal_dataset = full_dataset["validation"]
-test_dataset = full_dataset["test"]
-
-reformat = lambda x: {
-    'question': x['question'],
-    'choices': x['choices'],
-    'answer': label_list[x['answer']],
-    'label': label_list[:len(x["choices"])]
-}
-
-cal_dataset = [reformat(data) for data in cal_dataset]
-test_dataset = [reformat(data) for data in test_dataset]
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
 sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=20, max_tokens=1)
