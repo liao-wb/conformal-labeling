@@ -5,7 +5,7 @@ import argparse
 from tqdm import tqdm
 from vllm.sampling_params import GuidedDecodingParams
 import torch
-from utils import  format_example, save_result, get_dataset
+from rlhf_utils import  format_example, save_result, get_dataset
 from torch.utils.data import TensorDataset, DataLoader
 import torch.nn as nn
 import torch
@@ -43,7 +43,7 @@ args = parser.parse_args()
 dataset, label_list = get_dataset(args)
 cal_dataset = dataset[:int(0.2 * len(dataset))]
 test_dataset = dataset[int(0.2 * len(dataset)):]
-label_list = ['A', 'B', 'C', 'D']
+
 label_map = {}
 for i, element in label_list:
     label_map[element] = i
