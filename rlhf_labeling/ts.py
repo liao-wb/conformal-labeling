@@ -120,7 +120,7 @@ results = {
 indices = len(test_dataset)
 input_texts, labels = [], []
 for example in test_dataset:
-    input_text, label = format_example(example)
+    input_text, label = format_example(example, dataset=args.dataset)
     input_texts.append(input_text)
     labels.append(label)
 
