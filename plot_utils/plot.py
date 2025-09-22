@@ -28,9 +28,9 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
        max_cols : int, optional
            Maximum number of columns in the subplot grid (default: 3)
        """
-    SMALL_SIZE = 18
-    MEDIUM_SIZE = 18
-    BIGGER_SIZE = 16
+    SMALL_SIZE = 20
+    MEDIUM_SIZE = 20
+    BIGGER_SIZE = 18
 
     plt.rc('font', size=MEDIUM_SIZE)
     plt.rc('axes', titlesize=MEDIUM_SIZE)
@@ -66,16 +66,16 @@ def plot_results(models, target_fdr_list, fdr_list, power_list, fdr_std_list=Non
         ax.spines['right'].set_color('#D3D3D3')
         ax.spines['top'].set_color('#D3D3D3')
 
-        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=10, alpha=0.7)
+        ax.plot(target_fdrs, fdrs, 'bo--', label='FDR', markersize=12, alpha=0.7)
         if fdr_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(fdrs - fdr_std_list[i], 0, 1),
-                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.7,
+                          np.clip(fdrs + fdr_std_list[i], 0, 1), alpha=0.8,
                           edgecolor='lightblue', facecolor='lightblue')
 
-        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=15, alpha=0.7)
+        ax.plot(target_fdrs, powers, 'rs--', label='Power', markersize=12, alpha=0.7)
         if power_std_list is not None:
             ax.fill_between(target_fdrs, np.clip(powers - power_std_list[i], 0, 1),
-                          np.clip(powers + power_std_list[i], 0, 1), alpha=0.7,
+                          np.clip(powers + power_std_list[i], 0, 1), alpha=0.8,
                           edgecolor='lightpink', facecolor='lightpink')
 
 

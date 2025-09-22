@@ -56,7 +56,7 @@ if args.dataset == "imagenetv2":
     label_remap = {sorted_idx: int(class_name) for sorted_idx, class_name in enumerate(class_names)}
     print(f"Applied label remapping for ImageNetV2. Mapping size: {len(label_remap)}")
 
-dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False)
+dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
 # Initialize lists to store results
 all_confidences = []

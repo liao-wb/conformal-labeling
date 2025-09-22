@@ -6,9 +6,9 @@ import os
 
 
 def get_dataset(args):
-    dataset_name = args.dataset
+    dataset_name = args.cal_dataset
 
-    if args.dataset == "mathqa":
+    if args.cal_dataset == "mathqa":
         label_list = ['A', 'B', 'C', 'D', 'E']
         full_dataset = load_dataset('json', data_files={
             'test': f'/mnt/sharedata/ssd_large/users/huanghp/{dataset_name}/test.json',
@@ -21,7 +21,7 @@ def get_dataset(args):
             'answer': x['correct'].upper(),  # Convert 'a' -> 'A'
             'label': label_list
         }
-    elif args.dataset == "mmlu":
+    elif args.cal_dataset == "mmlu":
         label_list = ['A', 'B', 'C', 'D']
         #test_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test-00000-of-00001.parquet")
         #val_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation-00000-of-00001.parquet")
@@ -41,7 +41,7 @@ def get_dataset(args):
             'answer': label_list[x['answer']],
             'label': label_list[:len(x["choices"])]
         }
-    elif args.dataset == "mmlu_pro":
+    elif args.cal_dataset == "mmlu_pro":
         label_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J']
         full_dataset = load_dataset(
             "parquet",
@@ -56,7 +56,7 @@ def get_dataset(args):
             'answer': x['answer'].upper(),  # Convert 'a' -> 'A'
             'label': label_list[:len(x["options"])]
         }
-    elif args.dataset == "medmcqa":
+    elif args.cal_dataset == "medmcqa":
         label_list = ['A', 'B', 'C', 'D']
         full_dataset = load_dataset('json', data_files={
             'dev': f'/mnt/sharedata/ssd_large/users/huanghp/medmcqa/dev.json',
@@ -68,7 +68,7 @@ def get_dataset(args):
             'answer': label_list[x['cop'] - 1],
             'label': label_list,
         }
-    elif args.dataset == "commonsenseqa":
+    elif args.cal_dataset == "commonsenseqa":
         label_list = ['A', 'B', 'C', 'D']
         reformat = lambda x: {
             'question': x['Problem'],
@@ -76,7 +76,7 @@ def get_dataset(args):
             'answer': x['correct'].upper(),  # Convert 'a' -> 'A'
             'label': label_list
         }
-    elif args.dataset == "arc_easy":
+    elif args.cal_dataset == "arc_easy":
         full_dataset = load_dataset('json', data_files={
             'test': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/test.jsonl',
             'validation': f'/mnt/sharedata/ssd_large/users/huanghp/arc_easy/validation.jsonl'
@@ -97,14 +97,14 @@ def get_dataset(args):
 
 def save_result(args, results):
     output_dir = './result/'
-    output_file = f"./result/{args.dataset}_{args.model}_results.pkl"
+    output_file = f"./result/{args.cal_dataset}_{args.model}_results.pkl"
     os.makedirs(output_dir, exist_ok=True)
 
     with open(output_file, 'wb') as f:
         pickle.dump(results, f)
 
     df = pd.DataFrame(results)
-    df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep=",", index=True)
+    df.to_csv(f"./result/{args.model}_{args.cal_dataset}.csv", sep=",", index=True)
 
 def parse_options(options_str):
     options = re.findall(r'[a-z]\)\s*([^a-z]*)', options_str.lower())

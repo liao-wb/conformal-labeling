@@ -6,14 +6,14 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--algorithm", default="integrative", choices=["bh", "sbh", "cbh", "qbh", "integrative"])
+parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "qbh", "integrative"])
 parser.add_argument("--_lambda", type=float, default=0.94)
 parser.add_argument("--k_0", type=int, default=10000)
 
-parser.add_argument("--datasets", type=str, default="imagenet",)
+parser.add_argument("--datasets", type=str, default="Qwen3-32B_mmlu",)
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")
+parser.add_argument("--num_trials", type=int, default=1000, help="Number of trials")
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 
 parser.add_argument("--model", default="Qwen3-32B", type=str)
@@ -92,8 +92,8 @@ colors = [
 ]
 
 
-large_font_size = 20
-small_font_size = 16
+large_font_size = 24
+small_font_size = 20
 # plt.rcParams['axes.edgecolor'] = '#CCCCCC'  # Lighter axis spine color
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(18, 6))
 
@@ -111,12 +111,13 @@ for i in range(len(algorithm_list)):
         alpha_list, algorithm_fdr_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=14, linestyle='-', linewidth=3, color=colors[i], alpha=0.8
+        markersize=18, linestyle='-', linewidth=3, color=colors[i], alpha=0.8
     )
 
 #ax1.set_title("FDR Comparison", fontsize=large_font_size, weight='bold')
 ax1.set_xlabel("Target FDR Level (α)", fontsize=large_font_size)
 ax1.set_ylabel("FDR", fontsize=large_font_size)
+ax1.tick_params(axis='both', which='major', labelsize=18)
 
 ax1.legend(loc='upper left', fontsize=small_font_size, framealpha=1, shadow=True)
 
@@ -125,11 +126,13 @@ for i in range(len(algorithm_list)):
         alpha_list, algorithm_power_list[i],
         marker=markers[i % len(markers)],
         label=label_map(algorithm_list[i]),
-        markersize=14, linestyle='-', linewidth=3, color=colors[i], alpha=0.8
+        markersize=18, linestyle='-', linewidth=3, color=colors[i], alpha=0.8
     )
 #ax2.set_title("Power comparison", fontsize=large_font_size, weight='bold')
 ax2.set_xlabel("Target FDR Level (α)", fontsize=large_font_size)
 ax2.set_ylabel("Power", fontsize=large_font_size)
+ax2.tick_params(axis='both', which='major', labelsize=18)
+
 plt.legend(fontsize=small_font_size, framealpha=1, shadow=True)
 
 plt.tight_layout()

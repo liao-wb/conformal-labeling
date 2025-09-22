@@ -42,31 +42,3 @@ for example in dataset:
     labels.append(label)
 
 
-
-"""for i in tqdm(range(0, indices, batch_size)):
-    batch = dataset[i:i + batch_size]
-    input_texts, labels = [], []
-
-    for example in batch:
-        input_text, label = format_example(example)
-        input_texts.append(input_text)
-        labels.append(label)
-
-    outputs = model.generate(
-        prompts=input_texts,
-        sampling_params=sampling_params,
-        use_tqdm=False
-    )
-
-    for j, output in enumerate(outputs):
-        outputs_dict = output.outputs[0].logprobs[0]
-        token_ids = {token: next(key for key, value in outputs_dict.items() if value.decoded_token == token) for token in label_list}
-        logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]
-        preds = label_list[np.argmax(logits)]
-
-        #results['question'].append(input_texts[j])
-        #results['logits'].append(logits)
-        results['is_correct'].append(np.array(preds == labels[j]))
-        results['Yhat'].append(preds)
-        results['Y'].append(labels[j])
-        results["confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())"""

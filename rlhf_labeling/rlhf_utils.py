@@ -11,11 +11,11 @@ def fix_note(example):
     return example
 
 def get_dataset(args):
-    print(args.dataset)
-    if args.dataset == "tldr":
+    print(args.cal_dataset)
+    if args.cal_dataset == "tldr":
         label_list = ['A', 'B']
 
-        """batch_files = [
+        batch_files = [
             "/mnt/sharedata/hdd/users/huanghp/comparisons/batch3.json",
             "/mnt/sharedata/hdd/users/huanghp/comparisons/batch4.json",
             "/mnt/sharedata/hdd/users/huanghp/comparisons/batch5.json",
@@ -36,11 +36,8 @@ def get_dataset(args):
             "/mnt/sharedata/hdd/users/huanghp/comparisons/batch20.json",
             "/mnt/sharedata/hdd/users/huanghp/comparisons/batch22.json"
         ]
-"""
-        batch_files = [
-            "/mnt/sharedata/hdd/users/huanghp/comparisons/batch3.json",
-            "/mnt/sharedata/hdd/users/huanghp/comparisons/batch22.json"
-        ]
+
+
 
         # Load each dataset individually
         datasets = []
@@ -63,7 +60,7 @@ def get_dataset(args):
             'label': label_list
         }
 
-    elif args.dataset == "mmlu":
+    elif args.cal_dataset == "mmlu":
         label_list = ['A', 'B', 'C', 'D']
         #test_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/test-00000-of-00001.parquet")
         #val_dataset = load_from_disk("/mnt/sharedata/ssd_large/common/datasets/mmlu/all/validation-00000-of-00001.parquet")
@@ -83,7 +80,7 @@ def get_dataset(args):
             'answer': label_list[x['answer']],
             'label': label_list[:len(x["choices"])]
         }
-    elif args.dataset == "ag_news":
+    elif args.cal_dataset == "ag_news":
         label_list = ['A', 'B', 'C', 'D']
 
         full_dataset = load_dataset(
@@ -99,7 +96,7 @@ def get_dataset(args):
             'answer': label_list[x['label']],
             'label': label_list
         }
-    elif args.dataset == "dbpedia":
+    elif args.cal_dataset == "dbpedia":
         label_list = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N']
 
         # DBpedia 的类别映射（完整的14个类别）
@@ -126,7 +123,7 @@ def get_dataset(args):
                 'answer': label_list[x['label']],
                 'label': label_list
             }
-    elif args.dataset == "misinformation":
+    elif args.cal_dataset == "misinformation":
         label_list = ['A', 'B']
 
         # DBpedia 的类别映射（完整的14个类别）
@@ -156,7 +153,7 @@ def get_dataset(args):
                 'label': label_list
             }
 
-    elif args.dataset == "stance":
+    elif args.cal_dataset == "stance":
         label_list = ["A", "B", "C"]
         file_path = "/mnt/sharedata/hdd/users/huanghp/stance/GWSD.tsv"
         df = pd.read_csv(file_path, sep='\t')
@@ -195,7 +192,7 @@ def get_dataset(args):
             'label': label_list
         }
 
-    elif args.dataset == "hh-rlhf-helpful":
+    elif args.cal_dataset == "hh-rlhf-helpful":
         label_list = ["A", "B"]
         full_dataset = load_dataset(
             "json",
@@ -206,7 +203,7 @@ def get_dataset(args):
         dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
         #dataset = full_dataset["test"]
         reformat = lambda x: reformat_hh_rlhf(x)
-    elif args.dataset == "hh-rlhf-harmless":
+    elif args.cal_dataset == "hh-rlhf-harmless":
         label_list = ["A", "B"]
         full_dataset = load_dataset(
             "json",
@@ -217,7 +214,7 @@ def get_dataset(args):
         dataset = concatenate_datasets([full_dataset["train"], full_dataset["test"]])
         #dataset = full_dataset["test"]
         reformat = lambda x: reformat_hh_rlhf(x)
-    elif args.dataset == "shp":
+    elif args.cal_dataset == "shp":
         label_list = ["A", "B"]
         data_dir = "/mnt/sharedata/hdd/users/huanghp/SHP"
 
@@ -273,14 +270,14 @@ def reformat_hh_rlhf(x):
 
 def save_result(args, results):
     output_dir = './result/'
-    output_file = f"./result/{args.dataset}_{args.model}_results.pkl"
+    output_file = f"./result/{args.cal_dataset}_{args.model}_results.pkl"
     os.makedirs(output_dir, exist_ok=True)
 
     with open(output_file, 'wb') as f:
         pickle.dump(results, f)
 
     df = pd.DataFrame(results)
-    df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep=",", index=True)
+    df.to_csv(f"./result/{args.model}_{args.cal_dataset}.csv", sep=",", index=True)
 
 def parse_options(options_str):
     options = re.findall(r'[a-z]\)\s*([^a-z]*)', options_str.lower())
@@ -302,7 +299,7 @@ def format_example(example, dataset):
         prompt = '''You are given a text excerpt from Wikipedia. Classify it into the correct category based on its content.
         Respond with ONLY the letter (A-N) of the correct category. Do not include any explanation.\n\n'''
     elif dataset == "stance":
-        prompt = "You are given a statement about climate change. Determine the stance that a human would take towards this statement. Choose from: A) agrees, B) neutral, or C) disagrees. Respond with ONLY the letter (A, B, or C) of the correct stance. Do not include any explanation.\n\n"
+        prompt = "You are given a statement about climate change. Determine whether the headline agrees that global warming is a serious concern. Respond with ONLY the letter (A, B, or C) of the correct option. Do not include any explanation.\n\n"
     elif dataset == "misinformation":
         prompt = '''You are a fact-checking assistant. You are given a news headline as the question. Your task is to classify whether the headline contains factual information or misinformation.
 Important guidelines:

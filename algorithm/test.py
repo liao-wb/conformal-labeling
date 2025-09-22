@@ -32,7 +32,7 @@ def selection(Y, Yhat, confidence, cal_indices, alpha, args, calib_ratio=0.5, ra
     elif args.algorithm == "sbh":
         selection_indices, _ = storeybh(p_values, alpha)
     elif args.algorithm == "qbh":
-        selection_indices, _ = quantbh(p_values, alpha)
+        selection_indices, _ = quantilebh(p_values, alpha)
     elif args.algorithm == "integrative":
         selection_indices = integrative_bh(Y, Yhat, confidence, alpha, args, calib_ratio, random)
     elif args.algorithm == "by":
@@ -73,7 +73,7 @@ def new_selection(y_calib, y_hat_calib, conf_calib, y_test, y_hat_test, conf_tes
     elif args.algorithm == "sbh":
         selection_indices, _ = storeybh(p_values, alpha)
     elif args.algorithm == "qbh":
-        selection_indices, _ = quantbh(p_values, alpha, k_0=args.k_0)
+        selection_indices, _ = quantilebh(p_values, alpha, k_0=args.k_0)
     elif args.algorithm == "by":
         raise NotImplementedError
     elif args.algorithm == "dby":
@@ -154,7 +154,7 @@ def reg_selection(y, y_hat, confidence, alpha, args, error, calib_ratio=0.5, ran
     elif args.algorithm == "sbh":
         selection_indices = storeybh(p_values, alpha)
     elif args.algorithm == "qbh":
-        selection_indices = quantbh(p_values, alpha, k_0=args.k_0)
+        selection_indices = quantilebh(p_values, alpha, k_0=args.k_0)
     elif args.algorithm == "integrative":
         selection_indices = integrative_bh(y, y_hat, confidence, alpha, args, calib_ratio, random)
     elif args.algorithm == "by":
@@ -226,136 +226,176 @@ def dbh(p_values, alpha, gamma=0.9):
     return rejects
 
 
-def storeybh(p_values, alpha, B=20):
-    """Adaptive Storey-BH method with auto-selection of lambda from 0.1 to 0.9.
-    Returns boolean array of rejections based on adjusted alpha via pi_0.
+def _pFDR_hat_from_pi0_gamma(p_values, pi0_hat, gamma):
     """
-    m = len(p_values)
-    p_values = np.asarray(p_values)
+    Compute a simple plug-in pFDR estimate p̂FDR_lambda(γ) used for MSE selection.
+    Based on equation idea in Storey (2002). We'll use the original-data style:
+      p̂FDRλ(γ) = (π̂0 * γ) / ( (R_γ / m) * cond_prob )
+    where cond_prob = 1 - (1 - γ)^m (prob at least one p <= gamma)
+    and R_γ = #{p_i <= γ} (we use R_γ ∨ 1 in denominator to avoid zero).
+    This matches the 'pFDR' plug-in flavor in the paper for selection purposes.
+    """
+    p = np.asarray(p_values)
+    m = len(p)
+    R_gamma = np.sum(p <= gamma)
+    R_gamma = max(R_gamma, 1)   # finite-sample stabilization
+    Pr_P_leq_gamma_hat = R_gamma / m
+    # conditional probability that at least one p <= gamma
+    cond_prob = 1.0 - (1.0 - gamma) ** m
+    if Pr_P_leq_gamma_hat <= 0 or cond_prob <= 0:
+        return 1.0
+    pfdr_hat = (pi0_hat * gamma) / (Pr_P_leq_gamma_hat * cond_prob)
+    return float(min(pfdr_hat, 1.0))
 
-    # Define lambda grid (0.1, 0.2, ..., 0.9)
-    lambda_grid = np.arange(0.1, 1.0, 0.1)
-
-    # Proxy gamma for pFDR estimation (e.g., median p-value as in Section 9)
-    gamma_proxy = np.clip(np.median(p_values), 1e-8, 1 - 1e-8)
-
-    # --- Step 1: compute original-data pFDR estimates for all lambdas ---
+def storeybh(p_values, alpha, lambda_grid=None, B=200, gamma=None, random_state=None):
+    """
+    Storey-adaptive BH with bootstrap selection of lambda per Storey (2002) Algorithm 3.
+    Returns: (rejected_mask, pi0_est, best_lambda, adjusted_alpha)
+    Parameters:
+      p_values: array-like of p-values
+      alpha: nominal FDR level
+      lambda_grid: iterable of lambda values in [0,1). default np.arange(0.1,1.0,0.1)
+      B: number of bootstrap resamples for MSE selection
+      gamma: rejection region gamma used in pFDR estimates for MSE selection; default = median(p_values)
+      random_state: None or int for reproducibility
+    """
+    rng = np.random.default_rng(random_state)
+    p = np.asarray(p_values)
+    m = len(p)
+    if lambda_grid is None:
+        lambda_grid = np.arange(0.1, 1.0, 0.1)
+    lambda_grid = np.asarray(lambda_grid)
+    # safe gamma
+    if gamma is None:
+        gamma = float(np.median(p))
+        # ensure gamma not 0 or 1
+        gamma = np.clip(gamma, 1e-8, 1 - 1e-8)
+    # 1) compute original-data pi0_hat and pFDR_hat for each lambda
+    pi0_orig = []
     pfdr_orig = []
     for lam in lambda_grid:
-        denom = max(1e-12, 1 - lam)
-        pi0_hat = (1 + np.sum(p_values > lam)) / (m * denom)
-        pi0_hat = np.clip(pi0_hat, 0.0, 1.0)
+        # Storey's estimator with small +1 stabilization: (1 + #p > lambda) / (m * (1 - lambda))
+        # This is a typical stabilized version.
+        denom = max(1e-12, (1.0 - lam))
+        W_lambda = np.sum(p > lam)
+        pi0_hat = (1.0 + W_lambda) / (m * denom)
+        pi0_hat = min(pi0_hat, 1.0)
+        pi0_orig.append(pi0_hat)
+        pfdr_orig.append(_pFDR_hat_from_pi0_gamma(p, pi0_hat, gamma))
+    pi0_orig = np.asarray(pi0_orig)
+    pfdr_orig = np.asarray(pfdr_orig)
+    # plug-in target = min over lambdas of original pFDR estimates (Algorithm 3)
+    plug_in_target = float(np.min(pfdr_orig))
 
-        R = np.sum(p_values <= gamma_proxy)
-        R = max(R, 1)
-        Pr_P_leq_gamma = R / m
-        cond_prob = 1 - (1 - gamma_proxy) ** m
-        pfdr_hat = (pi0_hat * gamma_proxy) / (Pr_P_leq_gamma * cond_prob) if cond_prob > 0 else 1.0
-        pfdr_orig.append(min(pfdr_hat, 1.0))
+    # 2) For each lambda: bootstrap B times, compute pFDR* and MSE relative to plug-in target
+    MSEs = np.empty(len(lambda_grid), dtype=float)
+    for i, lam in enumerate(lambda_grid):
+        boot_pfdr = np.empty(B, dtype=float)
+        denom = max(1e-12, (1.0 - lam))
+        for b in range(B):
+            boot_sample = rng.choice(p, size=m, replace=True)
+            Wb = np.sum(boot_sample > lam)
+            pi0_b = (1.0 + Wb) / (m * denom)
+            pi0_b = min(max(pi0_b, 0.0), 1.0)
+            boot_pfdr[b] = _pFDR_hat_from_pi0_gamma(boot_sample, pi0_b, gamma)
+        MSEs[i] = np.mean((boot_pfdr - plug_in_target) ** 2)
 
-    plug_in_target = np.min(pfdr_orig)
+    # 3) pick best lambda minimizing MSE
+    best_idx = int(np.argmin(MSEs))
+    best_lambda = float(lambda_grid[best_idx])
 
-    # --- Step 2: bootstrap MSE for each lambda ---
-    best_lambda = lambda_grid[0]
-    min_mse = float("inf")
+    # 4) estimate pi0 using best lambda on original data
+    denom = max(1e-12, (1.0 - best_lambda))
+    W_best = np.sum(p > best_lambda)
+    pi0_hat = (1.0 + W_best) / (m * denom)
+    pi0_hat = float(np.clip(pi0_hat, 0.0, 1.0))
 
-    for lam in lambda_grid:
-        denom = max(1e-12, 1 - lam)
-        boot_pfdr = []
-        for _ in range(B):
-            boot_p = np.random.choice(p_values, size=m, replace=True)
-            pi0_b = (1 + np.sum(boot_p > lam)) / (m * denom)
-            pi0_b = np.clip(pi0_b, 0.0, 1.0)
-
-            Rb = np.sum(boot_p <= gamma_proxy)
-            Rb = max(Rb, 1)
-            Pr_P_leq_gamma_b = Rb / m
-            cond_prob_b = 1 - (1 - gamma_proxy) ** m
-            pfdr_b = (pi0_b * gamma_proxy) / (Pr_P_leq_gamma_b * cond_prob_b) if cond_prob_b > 0 else 1.0
-            boot_pfdr.append(min(pfdr_b, 1.0))
-
-        mse = np.mean((np.array(boot_pfdr) - plug_in_target) ** 2)
-        if mse < min_mse:
-            min_mse = mse
-            best_lambda = lam
-
-    # --- Step 3: estimate pi0 using best lambda ---
-    denom = max(1e-12, 1 - best_lambda)
-    pi0 = (1 + np.sum(p_values > best_lambda)) / (m * denom)
-    pi0 = np.clip(pi0, 0.0, 1.0)
-
-    # --- Step 4: adjust alpha and apply BH ---
-    adjusted_alpha = alpha / pi0 if pi0 > 0 else alpha
+    # 5) adjust alpha and apply BH
+    if pi0_hat <= 0:
+        adjusted_alpha = float(alpha)
+    else:
+        adjusted_alpha = float(alpha / pi0_hat)
     adjusted_alpha = min(adjusted_alpha, 1.0)
 
-    return bh(p_values, adjusted_alpha)
+    return bh(p, adjusted_alpha)
 
 
-def quantbh(p_values, alpha, B=20):
+def quantilebh(p_values, alpha, k0_min_frac=0.60, k0_max_frac=0.95, B=200, random_state=None):
     """
-    Quantile BH with bootstrap-based automatic selection of k_0.
-    Returns boolean array of rejections (same order as p_values).
+    Quantile-BH with bootstrap selection of k0 (same plug-in MSE idea).
+    Returns: dict with keys similar to storey_bh: rejected, pi0, best_k0, adjusted_alpha, ...
+    Parameters:
+      p_values: array-like
+      alpha: target FDR
+      k0_min_frac, k0_max_frac: fractions of m to set the search grid for k0 (defaults 0.60..0.95)
+      B: bootstrap samples
+    Notes:
+      uses the quantile formula for pi0:
+        pi0 = (m - k0 + 1) / ( m * (1 - p_(k0)) )
+      where p_(k0) is the k0-th order statistic (1-indexed).
     """
-    m = len(p_values)
-    p_values = np.asarray(p_values)
-    sorted_p = np.sort(p_values)
+    rng = np.random.default_rng(random_state)
+    p = np.asarray(p_values)
+    m = len(p)
+    sorted_p = np.sort(p)
 
-    # --- Step 1: define candidate k0 grid ---
-    k0_min = int(0.60 * m)
-    k0_max = int(0.9 * m)
-    k0_grid = np.arange(k0_min, k0_max + 1, int(0.1 * m))
+    k0_min = max(1, int(np.floor(k0_min_frac * m)))
+    k0_max = max(1, int(np.floor(k0_max_frac * m)))
+    # ensure valid grid
+    k0_grid = np.arange(k0_min, k0_max + 1, int(0.05 * m))
     k0_grid = k0_grid[(k0_grid >= 1) & (k0_grid < m)]
     if len(k0_grid) == 0:
-        k0_grid = np.array([m // 2])
+        k0_grid = np.array([max(1, m // 2)])
 
-    # --- Step 2: compute pi0 on original data for all k0 ---
+    # original-data pi0 estimates for each k0
     pi0_orig = []
     for k0 in k0_grid:
         p_k0 = sorted_p[k0 - 1]
-        if p_k0 >= 1 - 1e-12:
+        if p_k0 >= 1.0 - 1e-12:
             pi0_val = 1.0
         else:
-            pi0_val = (m - k0 + 1) / (m * (1 - p_k0))
-        pi0_orig.append(np.clip(pi0_val, 0.0, 1.0))
-    pi0_orig = np.array(pi0_orig)
+            pi0_val = (m - k0 + 1) / (m * (1.0 - p_k0))
+        pi0_val = float(np.clip(pi0_val, 0.0, 1.0))
+        pi0_orig.append(pi0_val)
+    pi0_orig = np.asarray(pi0_orig)
+    plug_in_target = float(np.min(pi0_orig))  # use min pi0 over k0 as plug-in target
 
-    # plug-in target = min pi0 over original data
-    plug_in_target = np.min(pi0_orig)
-
-    # --- Step 3: bootstrap MSE for each k0 ---
-    best_k0 = k0_grid[0]
-    min_mse = float("inf")
-
-    for k0 in k0_grid:
-        boot_pi0 = []
-        for _ in range(B):
-            boot_sample = np.random.choice(p_values, size=m, replace=True)
+    # bootstrap: for each k0 compute bootstrap pi0* and MSE relative to plug-in target
+    MSEs = np.empty(len(k0_grid), dtype=float)
+    for i, k0 in enumerate(k0_grid):
+        boot_pi0 = np.empty(B, dtype=float)
+        for b in range(B):
+            boot_sample = rng.choice(p, size=m, replace=True)
             boot_sorted = np.sort(boot_sample)
             p_k0_b = boot_sorted[k0 - 1]
-            if p_k0_b >= 1 - 1e-12:
+            if p_k0_b >= 1.0 - 1e-12:
                 pi0_b = 1.0
             else:
-                pi0_b = (m - k0 + 1) / (m * (1 - p_k0_b))
-            boot_pi0.append(np.clip(pi0_b, 0.0, 1.0))
+                pi0_b = (m - k0 + 1) / (m * (1.0 - p_k0_b))
+            pi0_b = float(np.clip(pi0_b, 0.0, 1.0))
+            boot_pi0[b] = pi0_b
+        MSEs[i] = np.mean((boot_pi0 - plug_in_target) ** 2)
 
-        mse = np.mean((np.array(boot_pi0) - plug_in_target) ** 2)
-        if mse < min_mse:
-            min_mse = mse
-            best_k0 = k0
+    best_idx = int(np.argmin(MSEs))
+    best_k0 = int(k0_grid[best_idx])
 
-    # --- Step 4: final pi0 estimate using best_k0 ---
-    p_k0 = sorted_p[best_k0 - 1]
-    if p_k0 >= 1 - 1e-12:
-        pi0_est = 1.0
+    # estimate pi0 on original data with best_k0
+    p_k0_orig = sorted_p[best_k0 - 1]
+    if p_k0_orig >= 1.0 - 1e-12:
+        pi0_hat = 1.0
     else:
-        pi0_est = (m - best_k0 + 1) / (m * (1 - p_k0))
-    pi0_est = np.clip(pi0_est, 0.0, 1.0)
+        pi0_hat = (m - best_k0 + 1) / (m * (1.0 - p_k0_orig))
+    pi0_hat = float(np.clip(pi0_hat, 0.0, 1.0))
 
-    # --- Step 5: adjust alpha and apply BH ---
-    adjusted_alpha = alpha / pi0_est if pi0_est > 0 else alpha
+    # adjust alpha and apply BH
+    if pi0_hat <= 0:
+        adjusted_alpha = float(alpha)
+    else:
+        adjusted_alpha = float(alpha / pi0_hat)
     adjusted_alpha = min(adjusted_alpha, 1.0)
 
-    return bh(p_values, adjusted_alpha)
+    return bh(p, adjusted_alpha)
+
 
 
 def integrative_bh(y, y_hat, confidence, alpha, args, calib_ratio=0.5, random=True):
