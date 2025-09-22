@@ -12,7 +12,7 @@ import torch
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="Qwen3-8B")
-parser.add_argument("--dataset", type=str, default="mathqa")
+parser.add_argument("--dataset", type=str, default="mmlu")
 parser.add_argument("--tensor_parallel_size", type=int, default=4)
 parser.add_argument("--batch_size", type=int, default=32)
 args = parser.parse_args()
@@ -133,6 +133,6 @@ for i, output in tqdm(enumerate(test_outputs)):
     results['Yhat'].append(preds)
     results['Y'].append(labels[i])
     results["before_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
-    results["after_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1) / t).item())
+    results["after_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda") / t, dim=-1)).item())
 
 save_result(args, results)
