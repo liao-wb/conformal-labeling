@@ -45,7 +45,7 @@ cal_dataset = dataset[:int(0.2 * len(dataset))]
 test_dataset = dataset[int(0.2 * len(dataset)):]
 
 label_map = {}
-for i, element in label_list:
+for i, element in enumerate(label_list):
     label_map[element] = i
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
