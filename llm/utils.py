@@ -8,7 +8,7 @@ import os
 def get_dataset(args):
     dataset_name = args.dataset
 
-    if args.cal_dataset == "mathqa":
+    if args.dataset == "mathqa":
         label_list = ['A', 'B', 'C', 'D', 'E']
         full_dataset = load_dataset('json', data_files={
             'test': f'/mnt/sharedata/ssd_large/users/huanghp/{dataset_name}/test.json',
