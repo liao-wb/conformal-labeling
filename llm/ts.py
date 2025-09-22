@@ -103,7 +103,8 @@ results = {
     "Yhat": [],
     "Y": [],
     "is_correct": [],
-    "confidence": [],
+    "before_confidence": [],
+    "after_confidence": [],
 }
 
 
