@@ -40,7 +40,7 @@ args = parser.parse_args()
 # test_dataset = [reformat(data) for data in test_dataset]
 
 
-dataset, label_list = get_dataset(args.dataset)
+dataset, label_list = get_dataset(args)
 cal_dataset = dataset[:int(0.2 * len(dataset))]
 test_dataset = dataset[int(0.2 * len(dataset)):]
 label_list = ['A', 'B', 'C', 'D']
