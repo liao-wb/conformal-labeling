@@ -64,7 +64,7 @@ indices = len(cal_dataset)
 cal_input_texts, labels = [], []
 
 for example in cal_dataset:
-    input_text, label = format_example(example)
+    input_text, label = format_example(example, dataset=args.dataset)
     cal_input_texts.append(input_text)
     num_label = label_map[label]
     labels.append(num_label)
