@@ -61,7 +61,7 @@ for example in cal_dataset:
 
 
 
-outputs = model.generate(
+cal_outputs = model.generate(
         prompts=cal_input_texts,
         sampling_params=sampling_params,
         use_tqdm=False
@@ -70,7 +70,7 @@ outputs = model.generate(
 cal_logits = torch.tensor([], dtype=torch.float, device="cuda")
 cal_labels = torch.tensor(labels, device="cuda")
 
-for i, output in tqdm(enumerate(outputs)):
+for i, output in tqdm(enumerate(cal_outputs)):
     outputs_dict = output.outputs[0].logprobs[0]
     token_ids = {token: next(key for key, value in outputs_dict.items() if value.decoded_token == token) for token in label_list}
     logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]
@@ -113,13 +113,13 @@ for example in test_dataset:
     input_texts.append(input_text)
     labels.append(label)
 
-outputs = model.generate(
+test_outputs = model.generate(
         prompts=input_texts,
         sampling_params=sampling_params,
         use_tqdm=False
     )
 
-for i, output in tqdm(enumerate(outputs)):
+for i, output in tqdm(enumerate(test_outputs)):
     outputs_dict = output.outputs[0].logprobs[0]
     token_ids = {token: next(key for key, value in outputs_dict.items() if value.decoded_token == token) for token in label_list}
     logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]

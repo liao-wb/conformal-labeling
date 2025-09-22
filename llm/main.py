@@ -11,6 +11,7 @@ parser.add_argument("--model", type=str, default="Qwen3-8B")
 parser.add_argument("--dataset", type=str, default="mathqa")
 parser.add_argument("--tensor_parallel_size", type=int, default=4)
 parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--max_model_len", type=int, default=1024)
 #parser.add_argument("--subject", type=str, default="college_biology")  # MMLU has different subjects
 
 
@@ -26,7 +27,7 @@ print()
 # vLLM Setup
 model = LLM(
     model=model_path,
-    gpu_memory_utilization=0.5, max_model_len=1024,
+    gpu_memory_utilization=0.5, max_model_len=args.max_model_len,
     tensor_parallel_size=args.tensor_parallel_size,
 )
 
