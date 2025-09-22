@@ -37,6 +37,7 @@ reformat = lambda x: {
 }
 
 cal_dataset = [reformat(data) for data in cal_dataset]
+test_dataset = [reformat(data) for data in test_dataset]
 
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
 sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=20, max_tokens=1)
@@ -44,7 +45,7 @@ sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprob
 model_path =f"/mnt/sharedata/ssd_large/common/LLMs/Yi-1.5-34B-Chat"
 model = LLM(
     model=model_path,
-    gpu_memory_utilization=0.5, max_model_len=1024,
+    gpu_memory_utilization=0.5, max_model_len=2048,
     tensor_parallel_size=args.tensor_parallel_size,
 )
 
@@ -87,7 +88,7 @@ dataloader = DataLoader(tensor_dataset, batch_size=256)
 t = torch.tensor(1.0, requires_grad=True, dtype=torch.float32)
 optimizer = torch.optim.Adam([t], lr=0.1)
 
-for epoch in range(400):
+for epoch in tqdm(range(400)):
     # Batch processing for all epochs except the last
     for batch_logits, batch_label in dataloader:
         optimizer.zero_grad()
