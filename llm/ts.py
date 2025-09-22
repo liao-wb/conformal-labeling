@@ -133,6 +133,6 @@ for i, output in tqdm(enumerate(test_outputs)):
     results['Yhat'].append(preds)
     results['Y'].append(labels[i])
     results["before_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
-    results["after_confidence"].append(torch.max(torch.softmax(torch.tensor(logits / t, device="cuda"), dim=-1)).item())
+    results["after_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1) / t).item())
 
 save_result(args, results)
