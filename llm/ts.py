@@ -18,6 +18,7 @@ parser.add_argument("--batch_size", type=int, default=32)
 args = parser.parse_args()
 
 label_list = ['A', 'B', 'C', 'D']
+label_map = {"A":0, "B":1, "C":2, "D":3}
 
 full_dataset = load_dataset(
     "parquet",
@@ -51,10 +52,12 @@ model = LLM(
 
 indices = len(cal_dataset)
 cal_input_texts, labels = [], []
+
 for example in cal_dataset:
     input_text, label = format_example(example)
     cal_input_texts.append(input_text)
-    labels.append(label)
+    num_label = label_map[label]
+    labels.append(num_label)
 
 
 
@@ -65,7 +68,7 @@ outputs = model.generate(
     )
 
 cal_logits = torch.tensor([], dtype=torch.float, device="cuda")
-cal_labels = []
+cal_labels = torch.tensor(labels, device="cuda")
 
 for i, output in tqdm(enumerate(outputs)):
     outputs_dict = output.outputs[0].logprobs[0]
@@ -73,13 +76,13 @@ for i, output in tqdm(enumerate(outputs)):
     logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]
     preds = label_list[np.argmax(logits)]
 
-    cal_logits = torch.cat((torch.tensor(logits, device="cuda"), cal_logits), 0)
-    cal_labels.append(np.argmax(logits))
+    logit_tensor = torch.tensor(logits, device="cuda").unsqueeze(0)
+    cal_logits = torch.cat((cal_logits, logit_tensor), dim=0)
 
-cal_labels = torch.tensor(cal_labels, dtype=torch.int, device="cuda")
-dataset = TensorDataset(cal_logits, cal_labels)
 
-dataloader = DataLoader(dataset, batch_size=256)
+tensor_dataset = TensorDataset(cal_logits, cal_labels)
+
+dataloader = DataLoader(tensor_dataset, batch_size=256)
 
 t = torch.tensor(1.0, requires_grad=True, dtype=torch.float32)
 optimizer = torch.optim.Adam([t], lr=0.1)
@@ -88,7 +91,7 @@ for epoch in range(400):
     # Batch processing for all epochs except the last
     for batch_logits, batch_label in dataloader:
         optimizer.zero_grad()
-        loss = nn.CrossEntropyLoss()(batch_logits, batch_label)
+        loss = nn.CrossEntropyLoss()(batch_logits / t, batch_label)
         loss.backward()
         optimizer.step()
 
@@ -103,9 +106,9 @@ results = {
 }
 
 
-indices = len(dataset)
+indices = len(test_dataset)
 input_texts, labels = [], []
-for example in dataset:
+for example in test_dataset:
     input_text, label = format_example(example)
     input_texts.append(input_text)
     labels.append(label)
@@ -128,6 +131,6 @@ for i, output in tqdm(enumerate(outputs)):
     results['Yhat'].append(preds)
     results['Y'].append(labels[i])
     results["before_confidence"].append(torch.max(torch.softmax(torch.tensor(logits, device="cuda"), dim=-1)).item())
-    results["before_confidence"].append(torch.max(torch.softmax(torch.tensor(logits / t, device="cuda"), dim=-1)).item())
+    results["after_confidence"].append(torch.max(torch.softmax(torch.tensor(logits / t, device="cuda"), dim=-1)).item())
 
 save_result(args, results)
