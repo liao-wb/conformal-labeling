@@ -269,14 +269,14 @@ def reformat_hh_rlhf(x):
 
 def save_result(args, results):
     output_dir = './result/'
-    output_file = f"./result/{args.cal_dataset}_{args.model}_results.pkl"
+    output_file = f"./result/{args.dataset}_{args.model}_results.pkl"
     os.makedirs(output_dir, exist_ok=True)
 
     with open(output_file, 'wb') as f:
         pickle.dump(results, f)
 
     df = pd.DataFrame(results)
-    df.to_csv(f"./result/{args.model}_{args.cal_dataset}.csv", sep=",", index=True)
+    df.to_csv(f"./result/{args.model}_{args.dataset}.csv", sep=",", index=True)
 
 def parse_options(options_str):
     options = re.findall(r'[a-z]\)\s*([^a-z]*)', options_str.lower())
