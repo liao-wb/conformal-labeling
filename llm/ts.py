@@ -42,7 +42,7 @@ test_dataset = [reformat(data) for data in test_dataset]
 guided_decoding_params = GuidedDecodingParams(choice=label_list)
 sampling_params = SamplingParams(guided_decoding=guided_decoding_params, logprobs=20, max_tokens=1)
 
-model_path =f"/mnt/sharedata/ssd_large/common/LLMs/Yi-1.5-34B-Chat"
+model_path =f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}"
 model = LLM(
     model=model_path,
     gpu_memory_utilization=0.5, max_model_len=2048,
