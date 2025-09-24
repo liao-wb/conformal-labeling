@@ -90,19 +90,19 @@ for data, target in dataloader:
 
     logits = logits / temperature
     pred = torch.argmax(logits, dim=1)
+    msp = torch.softmax(logits, dim=-1)[torch.arange(logits.size(0)), pred]
 
-    loss = criterion(logits, pred)
+    loss = torch.log(torch.sum(msp))
     model.zero_grad()
     loss.backward()
-
     # Perturbation
     gradient = data.grad.data
-    perturbation = epsilon * torch.sign(gradient)
+    perturbation = epsilon * torch.sign(-gradient)
     data_perturbed = data - perturbation
     data_perturbed = torch.clamp(data_perturbed, 0, 1)  # Keep valid range
 
     # Forward again with perturbed input
-    logits_perturbed = model(data_perturbed)
+    logits_perturbed = model(data_perturbed) / temperature
     prob_perturbed = torch.softmax(logits_perturbed, dim=-1)
     y_hat_odin = torch.argmax(prob_perturbed, dim=-1)
     conf_odin = prob_perturbed[torch.arange(prob_perturbed.size(0)), y_hat_odin]
