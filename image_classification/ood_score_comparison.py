@@ -84,6 +84,7 @@ dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False,
 all_msp_confidences = []
 all_odin_confidences = []
 all_energy_confidences = []
+all_react_confidences = []
 all_y_hat_odin = []
 all_y_hat = []
 all_y_true = []
@@ -114,6 +115,7 @@ for data, target in dataloader:
     react_logits = classifier(feature)
     react_probs = torch.softmax(react_logits, dim=-1)
     react_scores = react_probs[torch.arange(prob.size(0)), y_hat_msp]
+    all_react_confidences.extend(react_scores.detach().cpu().numpy())
 
     #odin
     logits = logits / temperature
@@ -152,7 +154,8 @@ df = pd.DataFrame({
     'Yhat_odin': all_y_hat_odin,
     'odin_confidence': all_odin_confidences,
     "msp_confidence": all_msp_confidences,
-    "energy_confidence": all_energy_confidences
+    "energy_confidence": all_energy_confidences,
+    "react_confidence": all_react_confidence
 })
 
 # Save to CSV
