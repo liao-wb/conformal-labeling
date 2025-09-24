@@ -22,7 +22,7 @@ model_name = args.model
 if model_name == "resnet34":
     model = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1).to(device).eval()
 elif model_name == "resnet152":
-    model = models.resnet152(weights=ResNet152_Weights).to(device).eval()
+    model = models.resnet152(weights=ResNet152_Weights.IMAGENET1K_V1).to(device).eval()
 elif model_name == "densenet161":
     model = models.densenet161(weights=DenseNet161_Weights.IMAGENET1K_V1).to(device).eval()
 elif model_name == "resnext50":
