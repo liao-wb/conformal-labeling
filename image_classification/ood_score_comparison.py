@@ -94,30 +94,34 @@ epsilon = args.epsilon
 criterion = torch.nn.CrossEntropyLoss()
 
 for data, target in dataloader:
-    data, target = data.to(device), target.to(device)
-    data.requires_grad = True
+    with torch.no_grad:
+        data, target = data.to(device), target.to(device)
+        data.requires_grad = True
 
-    # Forward pass with temperature scaling
-    logits = model(data)
-    prob = torch.softmax(logits, dim=-1)
-    y_hat_msp = torch.argmax(prob, dim=-1)
-    msp_conf = prob[torch.arange(prob.size(0)), y_hat_msp]
-    all_msp_confidences.extend(msp_conf.detach().cpu().numpy())
+        # Forward pass with temperature scaling
+        logits = model(data)
+        prob = torch.softmax(logits, dim=-1)
+        y_hat_msp = torch.argmax(prob, dim=-1)
+        msp_conf = prob[torch.arange(prob.size(0)), y_hat_msp]
+        all_msp_confidences.extend(msp_conf.detach().cpu().numpy())
 
-    all_y_hat.extend(y_hat_msp.detach().cpu().numpy())
+        all_y_hat.extend(y_hat_msp.detach().cpu().numpy())
 
-    energy_conf = torch.logsumexp(logits, dim=-1)
-    all_energy_confidences.extend(energy_conf.detach().cpu().numpy())
+        energy_conf = torch.logsumexp(logits, dim=-1)
+        all_energy_confidences.extend(energy_conf.detach().cpu().numpy())
 
-    #react
-    feature = feature_extractor(data)
-    feature = torch.clamp(feature, max=1.0)
-    react_logits = classifier(feature)
-    react_probs = torch.softmax(react_logits, dim=-1)
-    react_scores = react_probs[torch.arange(prob.size(0)), y_hat_msp]
-    all_react_confidences.extend(react_scores.detach().cpu().numpy())
+        #react
+        feature = feature_extractor(data)
+        feature = torch.clamp(feature, max=1.0)
+        react_logits = classifier(feature)
+        react_probs = torch.softmax(react_logits, dim=-1)
+        react_scores = react_probs[torch.arange(prob.size(0)), torch.argmax(react_probs, dim=-1)]
+        all_react_confidences.extend(react_scores.detach().cpu().numpy())
 
     #odin
+    data.requires_grad = True
+    # Forward pass with temperature scaling
+    logits = model(data)
     logits = logits / temperature
     pred = torch.argmax(logits, dim=1)
     msp = torch.softmax(logits, dim=-1)[torch.arange(logits.size(0)), pred]
