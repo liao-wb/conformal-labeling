@@ -76,7 +76,7 @@ for i, output in tqdm(enumerate(outputs)):
 
     prob = torch.softmax(logits, dim=-1)
     y_hat_msp = torch.argmax(prob, dim=-1)
-    msp_conf = prob[torch.arange(prob.size(0)), y_hat_msp]
+    msp_conf = prob[y_hat_msp]
     all_msp_confidences.extend(msp_conf.detach().cpu().numpy())
 
     all_y_hat.extend(y_hat_msp.detach().cpu().numpy())
@@ -86,7 +86,7 @@ for i, output in tqdm(enumerate(outputs)):
 
     alpha_confidence = torch.sum(prob ** 2, dim=-1)
     all_alpha_confidences.extend(alpha_confidence.detach().cpu().numpy())
-    all_y_true.extend(labels[i])
+    all_y_true.append(labels[i])
 
 df = pd.DataFrame({
     'Y': all_y_true,
