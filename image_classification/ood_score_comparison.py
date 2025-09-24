@@ -94,9 +94,8 @@ epsilon = args.epsilon
 criterion = torch.nn.CrossEntropyLoss()
 
 for data, target in dataloader:
-    with torch.no_grad:
+    with torch.no_grad():
         data, target = data.to(device), target.to(device)
-        data.requires_grad = True
 
         # Forward pass with temperature scaling
         logits = model(data)
