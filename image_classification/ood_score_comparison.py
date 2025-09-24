@@ -76,7 +76,7 @@ for data, target in dataloader:
     data.requires_grad = True
 
     # Forward pass with temperature scaling
-    logits = model(data) / temperature
+    logits = model(data)
     prob = torch.softmax(logits, dim=-1)
     y_hat_msp = torch.argmax(prob, dim=-1)
     msp_conf = prob[torch.arange(prob.size(0)), y_hat_msp]
@@ -87,6 +87,8 @@ for data, target in dataloader:
     energy_conf = torch.logsumexp(logits, dim=-1)
     all_energy_confidences.extend(energy_conf.detach().cpu().numpy())
 
+
+    logits = logits / temperature
     pred = torch.argmax(logits, dim=1)
 
     loss = criterion(logits, pred)

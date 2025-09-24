@@ -18,6 +18,21 @@ def get_data(dataset):
 
     return Y, Yhat, confidence
 
+def get_ood_data(dataset):
+
+        data = pd.read_csv("./datasets/" + dataset + '.csv')
+        Y = data["Y"].to_numpy()
+        msp_confidence = data["msp_confidence"].to_numpy()
+        odin_confidence = data["odin_confidence"].to_numpy()
+        energy_confidence = data["energy_confidence"].to_numpy()
+        Yhat = None
+        if dataset in ['stance', 'misinfo', 'bias', 'sentiment']:
+            Yhat = data["Yhat (GPT4o)"].to_numpy()
+        else:
+            Yhat = data["Yhat"].to_numpy()
+
+        return Y, Yhat, msp_confidence, odin_confidence, energy_confidence
+
 def get_preference_data(dataset):
     calib_file_path = "preference_data/" + dataset + ".calibration.jsonl"
     test_file_path = "preference_data/" + dataset + ".1"

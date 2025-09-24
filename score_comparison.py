@@ -1,0 +1,67 @@
+import numpy as np
+from algorithm.select_alg import selection
+from algorithm.preprocess import get_ood_data
+import argparse
+
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--dataset", type=str, default="resnet34_imagenet_oodscore")
+parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
+parser.add_argument("--random", default="True", choices=["True", "False"])
+parser.add_argument("--num_trials", type=int, default=30, help="Number of trials")
+parser.add_argument("--alpha", default=0.1, type=float, help="Target FDR level")
+parser.add_argument("--algorithm", type=str, default="cbh")
+args = parser.parse_args()
+
+dataset = args.dataset
+
+Y, Yhat, msp_confidence, odin_confidence, energy_confidence = get_ood_data(dataset)
+
+alpha = args.alpha
+num_trials = args.num_trials
+msp_fdr_list = []
+msp_power_list = []
+
+odin_fdr_list = []
+odin_power_list = []
+
+energy_fdr_list = []
+energy_power_list = []
+
+for j in range(num_trials):
+    n_samples = len(Y)
+    n_calib = int(n_samples * args.calib_ratio)
+    n_test = n_samples - n_calib
+    cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
+
+    msp_fdp, msp_power, selection_size, _ = selection(Y, Yhat, msp_confidence, cal_indices, alpha,
+                                                      calib_ratio=args.calib_ratio, random=(args.random == "True"),
+                                                      args=args)
+    msp_fdr_list.append(msp_fdp)
+    msp_power_list.append(msp_power)
+
+    odin_fdp, odin_power, selection_size, _ = selection(Y, Yhat, odin_confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+    odin_fdr_list.append(odin_fdp)
+    odin_power_list.append(odin_power)
+
+    energy_fdp, energy_power, selection_size, _ = selection(Y, Yhat, energy_confidence, cal_indices, alpha,
+                                                      calib_ratio=args.calib_ratio, random=(args.random == "True"),
+                                                      args=args)
+    energy_fdr_list.append(energy_fdp)
+    energy_power_list.append(energy_power)
+
+
+
+
+print(f"MSP Realized FDR: {np.mean(msp_fdr_list) * 100}%")
+print(f"MSP Mean Power: {np.mean(msp_power_list) * 100}%")
+print()
+print(f"odin Realized FDR: {np.mean(odin_fdr_list) * 100}%")
+print(f"odin Mean Power: {np.mean(odin_power_list) * 100}%")
+print()
+print(f"energy Realized FDR: {np.mean(energy_fdr_list) * 100}%")
+print(f"energy Mean Power: {np.mean(energy_power_list) * 100}%")
+print()
+
+print(f"AI only Error: {100 - np.sum(Yhat==Y) / len(Y) * 100}%")
