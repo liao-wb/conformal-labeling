@@ -158,7 +158,7 @@ df = pd.DataFrame({
     'odin_confidence': all_odin_confidences,
     "msp_confidence": all_msp_confidences,
     "energy_confidence": all_energy_confidences,
-    "react_confidence": all_react_confidence
+    "react_confidence": all_react_confidences
 })
 
 # Save to CSV
