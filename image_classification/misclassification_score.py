@@ -106,8 +106,6 @@ for data, target in dataloader:
 df = pd.DataFrame({
     'Y': all_y_true,
     "Yhat": all_y_hat,
-    'Yhat_odin': all_y_hat_odin,
-    'odin_confidence': all_odin_confidences,
     "msp_confidence": all_msp_confidences,
     "entropy_confidence": all_entropy_confidences,
     "alpha_confidence": all_alpha_confidences
