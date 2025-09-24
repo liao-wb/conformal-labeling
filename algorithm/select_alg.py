@@ -154,7 +154,7 @@ def reg_selection(y, y_hat, confidence, alpha, args, error, calib_ratio=0.5, ran
     elif args.algorithm == "sbh":
         selection_indices = storeybh(p_values, alpha)
     elif args.algorithm == "qbh":
-        selection_indices = quantbh(p_values, alpha, k_0=args.k_0)
+        selection_indices = quantbh(p_values, alpha)
     elif args.algorithm == "integrative":
         selection_indices = integrative_bh(y, y_hat, confidence, alpha, args, calib_ratio, random)
     elif args.algorithm == "by":
@@ -169,10 +169,16 @@ def reg_selection(y, y_hat, confidence, alpha, args, error, calib_ratio=0.5, ran
 
     selection_size = y_reject.shape[0]
 
-    fdr = np.sum((y_reject - y_hat_reject)**2 > error) / selection_size if selection_size > 0 else 0
-    power = np.sum((y_reject - y_hat_reject)**2 <= error) / np.sum((y_test - y_hat_test)**2 <= error)
 
-    return fdr, power, selection_size
+
+    fdr = np.sum((y_reject - y_hat_reject)**2 > error) / selection_size if selection_size > 0 else 0
+    power = np.sum((y_reject - y_hat_reject)**2 <= error) / np.sum((y_test - y_hat_test)**2 <= error) if np.sum((y_test - y_hat_test)**2 <= error) > 0 else 0
+    mean_l2 = np.mean((y_reject - y_hat_reject)**2) if selection_size > 0 else 0
+
+    if np.isnan(mean_l2):
+        mean_l2 = 0
+
+    return fdr, power, selection_size, mean_l2
 
 
 

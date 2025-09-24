@@ -6,7 +6,7 @@ import pandas as pd
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="Qwen3-32B_medmcqa_calibration")
+parser.add_argument("--datasets", type=str, default="Qwen2.5-32B-Instruct_misinformation_calibration")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=100, help="Number of trials")

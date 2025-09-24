@@ -44,8 +44,20 @@ for i, ds in enumerate(ds_list):
         n_calib = int(n_samples * args.calib_ratio)
         n_test = n_samples - n_calib
         cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
+        all_indices = np.arange(len(Y))
+        test_indices = np.setdiff1d(all_indices, cal_indices)
 
-        fdp, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+        #fdp, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+        y_test, y_hat_test, confidence_test = Y[test_indices], Yhat[test_indices], confidence[test_indices]
+        selection_indices = confidence_test >= 0.9
+        y_reject, y_hat_reject = y_test[selection_indices], y_hat_test[selection_indices]
+        # y_accept, y_hat_accept = y_test[selection_indices == 0], y_hat_test[selection_indices == 0]
+
+        selection_size = y_reject.shape[0]
+
+        fdp = np.sum(y_reject != y_hat_reject) / selection_size if selection_size > 0 else 0
+        power = np.sum(y_reject == y_hat_reject) / np.sum(y_test == y_hat_test)
+
         fdr_list.append(fdp)
         power_list.append(power)
         selection_size_list.append(selection_size)
@@ -56,74 +68,10 @@ for i, ds in enumerate(ds_list):
     selection_size_array[i] = np.array(selection_size_list)
 
     #print(f"Mean Overall Error: {np.mean(np.array(error_list)) * 100}")
-    print(f"Mean FDR: {np.mean(fdr_list)}")
+    print(f"Mean FDR: {np.mean(fdr_list) * 100}")
     print(f"Mean Power: {np.mean(power_list) * 100}")
     print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
 
     print(f"Error:{100 - np.sum(Yhat==Y)/len(Y) * 100}")
 
 
-def calculate_ece_multiclass(y_true, y_pred, confidence_scores, n_bins=10):
-    """
-    计算多分类问题的预期校准误差 (Expected Calibration Error, ECE)
-
-    参数:
-    y_true: 真实标签
-    y_pred: 预测标签
-    confidence_scores: 最大softmax概率（置信度）
-    n_bins: 分箱数量
-
-    返回:
-    ece: 预期校准误差
-    """
-    # 确保输入是numpy数组
-    y_true = np.array(y_true)
-    y_pred = np.array(y_pred)
-    confidence_scores = np.array(confidence_scores)
-
-    # 检查预测是否正确
-    correct_predictions = (y_pred == y_true).astype(float)
-
-    # 按置信度分箱
-    bin_boundaries = np.linspace(0, 1, n_bins + 1)
-    bin_lowers = bin_boundaries[:-1]
-    bin_uppers = bin_boundaries[1:]
-
-    ece = 0.0
-    total_samples = len(y_true)
-
-    bin_accuracies = []
-    bin_confidences = []
-    bin_counts = []
-
-    for bin_lower, bin_upper in zip(bin_lowers, bin_uppers):
-        # 找到在当前bin中的样本
-        in_bin_mask = np.logical_and(confidence_scores >= bin_lower,
-                                     confidence_scores < bin_upper)
-        bin_count = np.sum(in_bin_mask)
-
-        if bin_count == 0:
-            bin_accuracies.append(0)
-            bin_confidences.append(0)
-            bin_counts.append(0)
-            continue
-
-        # 计算bin内的准确率
-        bin_accuracy = np.mean(correct_predictions[in_bin_mask])
-        # 计算bin内的平均置信度
-        bin_confidence = np.mean(confidence_scores[in_bin_mask])
-
-        bin_accuracies.append(bin_accuracy)
-        bin_confidences.append(bin_confidence)
-        bin_counts.append(bin_count)
-
-        # 计算该bin的校准误差
-        bin_ece = np.abs(bin_accuracy - bin_confidence) * bin_count
-        ece += bin_ece
-
-    # 归一化
-    ece = ece / total_samples
-
-    return ece
-
-print(f"ECE: {calculate_ece_multiclass(Y, Yhat, confidence)}")
