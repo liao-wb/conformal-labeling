@@ -102,7 +102,7 @@ for data, target in dataloader:
     data_perturbed = torch.clamp(data_perturbed, 0, 1)  # Keep valid range
 
     # Forward again with perturbed input
-    logits_perturbed = model(data_perturbed) / temperature
+    logits_perturbed = model(data_perturbed)
     prob_perturbed = torch.softmax(logits_perturbed, dim=-1)
     y_hat_odin = torch.argmax(prob_perturbed, dim=-1)
     conf_odin = prob_perturbed[torch.arange(prob_perturbed.size(0)), y_hat_odin]
