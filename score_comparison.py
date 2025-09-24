@@ -23,8 +23,8 @@ num_trials = args.num_trials
 msp_fdr_list = []
 msp_power_list = []
 
-odin_fdr_list = []
-odin_power_list = []
+react_fdr_list = []
+react_power_list = []
 
 energy_fdr_list = []
 energy_power_list = []
@@ -41,9 +41,9 @@ for j in range(num_trials):
     msp_fdr_list.append(msp_fdp)
     msp_power_list.append(msp_power)
 
-    odin_fdp, odin_power, selection_size, _ = selection(Y, Yhat, odin_confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
-    odin_fdr_list.append(odin_fdp)
-    odin_power_list.append(odin_power)
+    react_fdp, react_power, selection_size, _ = selection(Y, Yhat, odin_confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+    react_fdr_list.append(react_fdp)
+    react_power_list.append(react_power)
 
     energy_fdp, energy_power, selection_size, _ = selection(Y, Yhat, energy_confidence, cal_indices, alpha,
                                                       calib_ratio=args.calib_ratio, random=(args.random == "True"),
@@ -57,8 +57,8 @@ for j in range(num_trials):
 print(f"MSP Realized FDR: {np.mean(msp_fdr_list) * 100}%")
 print(f"MSP Mean Power: {np.mean(msp_power_list) * 100}%")
 print()
-print(f"odin Realized FDR: {np.mean(odin_fdr_list) * 100}%")
-print(f"odin Mean Power: {np.mean(odin_power_list) * 100}%")
+print(f"React Realized FDR: {np.mean(react_fdr_list) * 100}%")
+print(f"React Mean Power: {np.mean(react_power_list) * 100}%")
 print()
 print(f"energy Realized FDR: {np.mean(energy_fdr_list) * 100}%")
 print(f"energy Mean Power: {np.mean(energy_power_list) * 100}%")

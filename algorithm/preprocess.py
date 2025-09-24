@@ -23,7 +23,7 @@ def get_ood_data(dataset):
         data = pd.read_csv("./datasets/" + dataset + '.csv')
         Y = data["Y"].to_numpy()
         msp_confidence = data["msp_confidence"].to_numpy()
-        odin_confidence = data["odin_confidence"].to_numpy()
+        react_confidence = data["react_confidence"].to_numpy()
         energy_confidence = data["energy_confidence"].to_numpy()
         Yhat = None
         if dataset in ['stance', 'misinfo', 'bias', 'sentiment']:
@@ -31,7 +31,7 @@ def get_ood_data(dataset):
         else:
             Yhat = data["Yhat"].to_numpy()
 
-        return Y, Yhat, msp_confidence, odin_confidence, energy_confidence
+        return Y, Yhat, msp_confidence, react_confidence, energy_confidence
 
 def get_preference_data(dataset):
     calib_file_path = "preference_data/" + dataset + ".calibration.jsonl"
