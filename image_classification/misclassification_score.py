@@ -88,7 +88,7 @@ for data, target in dataloader:
 
         all_y_hat.extend(y_hat_msp.detach().cpu().numpy())
 
-        entropy_conf = torch.sum(prob * torch.log(prob))
+        entropy_conf = torch.sum(prob * torch.log(prob), dim=-1)
         all_entropy_confidences.extend(entropy_conf.detach().cpu().numpy())
 
         alpha_confidence = torch.sum(prob ** 2, dim=-1)
