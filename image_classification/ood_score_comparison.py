@@ -92,7 +92,7 @@ for data, target in dataloader:
     pred = torch.argmax(logits, dim=1)
     msp = torch.softmax(logits, dim=-1)[torch.arange(logits.size(0)), pred]
 
-    loss = torch.log(torch.sum(msp))
+    loss = torch.sum(torch.log(msp))
     model.zero_grad()
     loss.backward()
     # Perturbation
