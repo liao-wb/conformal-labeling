@@ -6,17 +6,17 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", type=str, default="resnet34_imagenet_oodscore")
+parser.add_argument("--dataset", type=str, default="resnet34_imagenet_misclassificationscore")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=30, help="Number of trials")
-parser.add_argument("--alpha", default=0.1, type=float, help="Target FDR level")
+parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
+parser.add_argument("--alpha", default=0.05, type=float, help="Target FDR level")
 parser.add_argument("--algorithm", type=str, default="cbh")
 args = parser.parse_args()
 
 dataset = args.dataset
 
-Y, Yhat, msp_confidence, odin_confidence, energy_confidence = get_ood_data(dataset)
+Y, Yhat, msp_confidence, entropy_confidence, alpha_confidence = get_ood_data(dataset)
 
 alpha = args.alpha
 num_trials = args.num_trials
@@ -41,13 +41,13 @@ for j in range(num_trials):
     msp_fdr_list.append(msp_fdp)
     msp_power_list.append(msp_power)
 
-    react_fdp, react_power, selection_size, _ = selection(Y, Yhat, odin_confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
+    react_fdp, react_power, selection_size, _ = selection(Y, Yhat, entropy_confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
     react_fdr_list.append(react_fdp)
     react_power_list.append(react_power)
 
-    energy_fdp, energy_power, selection_size, _ = selection(Y, Yhat, energy_confidence, cal_indices, alpha,
-                                                      calib_ratio=args.calib_ratio, random=(args.random == "True"),
-                                                      args=args)
+    energy_fdp, energy_power, selection_size, _ = selection(Y, Yhat, alpha_confidence, cal_indices, alpha,
+                                                            calib_ratio=args.calib_ratio, random=(args.random == "True"),
+                                                            args=args)
     energy_fdr_list.append(energy_fdp)
     energy_power_list.append(energy_power)
 

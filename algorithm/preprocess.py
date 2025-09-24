@@ -23,8 +23,8 @@ def get_ood_data(dataset):
         data = pd.read_csv("./datasets/" + dataset + '.csv')
         Y = data["Y"].to_numpy()
         msp_confidence = data["msp_confidence"].to_numpy()
-        react_confidence = data["react_confidence"].to_numpy()
-        energy_confidence = data["energy_confidence"].to_numpy()
+        react_confidence = data["entropy_confidence"].to_numpy()
+        energy_confidence = data["alpha_confidence"].to_numpy()
         Yhat = None
         if dataset in ['stance', 'misinfo', 'bias', 'sentiment']:
             Yhat = data["Yhat (GPT4o)"].to_numpy()

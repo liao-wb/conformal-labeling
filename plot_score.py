@@ -7,14 +7,14 @@ import seaborn as sns
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="resnet34_imagenet_oodscore")
+parser.add_argument("--datasets", type=str, default="resnet34_imagenet_misclassificationscore")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=1, help="Number of trials")
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
-parser.add_argument("--score_function", default="energy")
+parser.add_argument("--score_function", default="alpha")
 args = parser.parse_args()
 
 dataset = args.datasets
@@ -48,10 +48,10 @@ for i, ds in enumerate(ds_list):
 
     if args.score_function == "msp":
         p_values, y_test, y_test_hat, t = get_p_values(Y, Yhat, msp_confidence, cal_indices, alpha, args, calib_ratio=args.calib_ratio, random=True)
-    elif args.score_function == "react":
+    elif args.score_function == "entropy":
         p_values, y_test, y_test_hat, t = get_p_values(Y, Yhat, react_confidence, cal_indices, alpha, args,
                                                        calib_ratio=args.calib_ratio, random=True)
-    elif args.score_function == "energy":
+    elif args.score_function == "alpha":
         p_values, y_test, y_test_hat, t = get_p_values(Y, Yhat, energy_confidence, cal_indices, alpha, args,
                                                        calib_ratio=args.calib_ratio, random=True)
     else:

@@ -5,7 +5,7 @@ from torch.utils.data import DataLoader
 import torchvision.models as models
 import argparse
 import pandas as pd
-from torchvision.models import ResNet34_Weights, DenseNet161_Weights, ResNeXt50_32X4D_Weights
+from torchvision.models import ResNet34_Weights, DenseNet161_Weights, ResNeXt50_32X4D_Weights, ResNet152_Weights
 import numpy as np
 
 parser = argparse.ArgumentParser()
@@ -21,6 +21,8 @@ model_name = args.model
 
 if model_name == "resnet34":
     model = models.resnet34(weights=ResNet34_Weights.IMAGENET1K_V1).to(device).eval()
+elif model_name == "resnet152":
+    model = models.resnet152(weights=ResNet152_Weights).to(device).eval()
 elif model_name == "densenet161":
     model = models.densenet161(weights=DenseNet161_Weights.IMAGENET1K_V1).to(device).eval()
 elif model_name == "resnext50":
