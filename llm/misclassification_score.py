@@ -58,14 +58,16 @@ outputs = model.generate(
         use_tqdm=False
     )
 
-all_msp_confidences = []
-all_odin_confidences = []
-all_entropy_confidences = []
-all_alpha_confidences = []
-all_y_hat_odin = []
-all_y_hat = []
-all_y_true = []
 
+
+results = {
+    "Yhat": [],
+    "Y": [],
+    "is_correct": [],
+    "msp_confidence": [],
+    "entropy_confidence":[],
+    "alpha_confidence": []
+}
 
 for i, output in tqdm(enumerate(outputs)):
     outputs_dict = output.outputs[0].logprobs[0]
@@ -77,26 +79,21 @@ for i, output in tqdm(enumerate(outputs)):
     prob = torch.softmax(logits, dim=-1)
     y_hat_msp = torch.argmax(prob, dim=-1)
     msp_conf = prob[y_hat_msp]
-    all_msp_confidences.extend(msp_conf.detach().cpu().numpy())
 
-    all_y_hat.extend(y_hat_msp.detach().cpu().numpy())
 
-    entropy_conf = torch.sum(prob * torch.log(prob), dim=-1)
-    all_entropy_confidences.extend(entropy_conf.detach().cpu().numpy())
+    logits = [output.outputs[0].logprobs[0][id].logprob for id in token_ids.values()]
+    preds = label_list[np.argmax(logits)]
 
-    alpha_confidence = torch.sum(prob ** 2, dim=-1)
-    all_alpha_confidences.extend(alpha_confidence.detach().cpu().numpy())
-    all_y_true.append(labels[i])
+    # results['question'].append(input_texts[j])
+    # results['logits'].append(logits)
+    logits_tensor = torch.tensor(logits, device="cuda")
+    results['is_correct'].append(np.array(preds == labels[i]))
+    results['Yhat'].append(preds)
+    results['Y'].append(labels[i])
+    results["msp_confidence"].append(torch.max(torch.softmax(logits_tensor, dim=-1)).item())
+    results["entropy_confidence"].append(torch.sum(prob * torch.log(prob), dim=-1).item())
+    results["alpha_confidence"].append(torch.sum(torch.softmax(logits_tensor, dim=-1) ** 2, dim=-1).item())
 
-df = pd.DataFrame({
-    'Y': all_y_true,
-    "Yhat": all_y_hat,
-    "msp_confidence": all_msp_confidences,
-    "entropy_confidence": all_entropy_confidences,
-    "alpha_confidence": all_alpha_confidences
-})
 
-# Save to CSV
-output_file = f'{args.model}_{args.dataset}_oodscore.csv'
-df.to_csv(output_file, index=False)
-print(f"Results saved to {output_file}")
+
+save_result(args, results)
