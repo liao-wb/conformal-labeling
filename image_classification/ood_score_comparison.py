@@ -60,7 +60,7 @@ if args.dataset == "imagenetv2":
 dataloader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=8)
 
 # Initialize lists to store results
-all_confidences = []
+all_msp_confidences = []
 all_odin_confidences = []
 all_energy_confidences = []
 all_y_hat_odin = []
@@ -80,6 +80,7 @@ for data, target in dataloader:
     prob = torch.softmax(logits, dim=-1)
     y_hat_msp = torch.argmax(prob, dim=-1)
     msp_conf = prob[torch.arange(prob.size(0)), y_hat_msp]
+    all_msp_confidences.extend(msp_conf.detach().cpu().numpy())
 
     all_y_hat.extend(y_hat_msp.detach().cpu().numpy())
 
@@ -120,7 +121,7 @@ df = pd.DataFrame({
     "Yhat": all_y_hat,
     'Yhat_odin': all_y_hat_odin,
     'odin_confidence': all_odin_confidences,
-    "msp_confidence": all_confidences,
+    "msp_confidence": all_msp_confidences,
     "energy_confidence": all_energy_confidences
 })
 
