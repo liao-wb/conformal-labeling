@@ -44,7 +44,6 @@ def selection(Y, Yhat, confidence, cal_indices, alpha, args, calib_ratio=0.5, ra
 
     y_reject, y_hat_reject = y_test[selection_indices], y_hat_test[selection_indices]
     #y_accept, y_hat_accept = y_test[selection_indices == 0], y_hat_test[selection_indices == 0]
-
     selection_size = y_reject.shape[0]
 
     fdr = np.sum(y_reject != y_hat_reject) / selection_size if selection_size > 0 else 0
