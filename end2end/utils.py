@@ -4,19 +4,23 @@ from algorithm.select_alg import selection
 import numpy as np
 from torch.utils.data import DataLoader, Subset
 from torch.utils.data import ConcatDataset
-from relabeled_dataset import RelabeledDataset
+from .custom_dataset import RelabeledDataset
 import torch.nn as nn
 import torch.optim as optim
 from tqdm import tqdm
 
 def get_selected_dataloader(train_ds, args, alpha=0.1):
     model = models.resnet152(weights=models.ResNet152_Weights.IMAGENET1K_V1).to("cuda")
+    model = nn.DataParallel(model)
+    #model = models.vit_l_16(weights=models.ViT_L_16_Weights.IMAGENET1K_V1).to("cuda")
     model.eval()
     origin_train_loader = get_dataloader(train_ds, batch_size=1024)
+    selected_acc = evaluate(model, origin_train_loader)
+    print(f"Accuracy on the selected subset: {selected_acc}")
     with torch.no_grad():
         confidence = torch.tensor([], device="cuda")
-        Yhat = torch.tensor([], device="cuda")
-        Y = torch.tensor([], device="cuda")
+        Yhat = torch.tensor([], device="cuda", dtype=int)
+        Y = torch.tensor([], device="cuda", dtype=int)
         for data, target in origin_train_loader:
             data = data.to("cuda")
             target = target.to("cuda")
@@ -35,32 +39,44 @@ def get_selected_dataloader(train_ds, args, alpha=0.1):
         n_samples = Y.shape[0]
         n_calib = int(n_samples * 0.1)
         cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
-        cal_dataset = Subset(train_ds, torch.tensor(cal_indices))
+        cal_dataset = Subset(train_ds, torch.tensor(cal_indices).tolist())
 
-        mask = np.ones(n_samples, dtype=bool)
-        mask[cal_indices] = False
-        test_indices = np.where(mask)[0]
-        test_dataset = Subset(train_ds, torch.tensor(test_indices))
+        all_indices = np.arange(len(Y))
+        test_indices = np.setdiff1d(all_indices, cal_indices)
+        test_dataset = Subset(train_ds, torch.tensor(test_indices).tolist())
+      
 
         fdp, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_indices, alpha,
                                                                   calib_ratio=0.1,
                                                                   random=True, args=args)
-        selected_subset = Subset(test_dataset, torch.tensor(selection_indices))
-        selected_acc = evaluate(model, selected_subset)
+        print(f"FDR: {fdp}, Power: {power}")
+        if isinstance(selection_indices, np.ndarray) and selection_indices.dtype == bool:
+            # 方法1: 使用 np.where 获取索引位置
+            integer_indices = np.where(selection_indices)[0]
+            
+            # 方法2: 或者直接使用布尔数组索引
+            # integer_indices = np.arange(len(selection_indices))[selection_indices]
+            
+            original_indices = test_indices[integer_indices]
+            selected_subset = Subset(train_ds, original_indices.tolist())
+        print(f"Selection size: {np.sum(selection_indices)}, {selection_size}, {len(selected_subset)}")
+        selected_dataloader = get_dataloader(selected_subset, batch_size=1024, shuffle=False)
+        selected_acc = evaluate(model, selected_dataloader)
         print(f"Accuracy on the selected subset: {selected_acc}")
 
-        ai_label = torch.tensor([], dtype=torch.int, device="cuda")
-        selected_dataloader = get_dataloader(selected_subset, batch_size=1024, shuffle=False)
+        ai_label = torch.tensor([], dtype=torch.int, device="cpu")
         for data, target in selected_dataloader:
             data = data.to("cuda")
             prob = torch.softmax(model(data), dim=-1)
-            pred = torch.argmax(prob, dim=-1)
+            pred = torch.argmax(prob, dim=-1).detach().cpu()
             ai_label = torch.cat((ai_label, pred), dim=0)
         relabeled_ds = RelabeledDataset(selected_subset, ai_label)
+        relabeled_ds = selected_subset
         merged_dataset = ConcatDataset([cal_dataset, relabeled_ds])
         return get_dataloader(merged_dataset, batch_size=64, shuffle=True)
+
 def get_dataloader(ds, batch_size=64, shuffle=False):
-    return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=32)
+    return DataLoader(ds, batch_size=batch_size, shuffle=shuffle, num_workers=64)
 
 
 def evaluate(model, val_loader, device="cuda"):
@@ -81,10 +97,10 @@ def evaluate(model, val_loader, device="cuda"):
 def train(model, train_loader, val_loader, epochs=15, lr=3e-5, weight_decay=0.01):
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model.to(device)
-
+    model = nn.DataParallel(model)
     # Loss + Optimizer + Scheduler
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
-    optimizer = optim.AdamW(model.parameters(), lr=lr, weight_decay=weight_decay)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     for epoch in tqdm(range(epochs)):
@@ -118,22 +134,35 @@ def train(model, train_loader, val_loader, epochs=15, lr=3e-5, weight_decay=0.01
         train_acc = total_correct / total_samples
         print(f"  Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
 
-        # -------------------------
-        #   Evaluate
-        # -------------------------
-        model.eval()
-        val_correct = 0
-        val_total = 0
-        with torch.no_grad():
-            for imgs, labels in val_loader:
-                imgs = imgs.to(device)
-                labels = labels.to(device)
-                outputs = model(imgs)
-                preds = outputs.argmax(1)
-                val_correct += (preds == labels).sum().item()
-                val_total += imgs.size(0)
+        if epoch % 10 == 0:
+            model.eval()
+            val_correct = 0
+            val_total = 0
+            with torch.no_grad():
+                for imgs, labels in val_loader:
+                    imgs = imgs.to(device)
+                    labels = labels.to(device)
+                    outputs = model(imgs)
+                    preds = outputs.argmax(1)
+                    val_correct += (preds == labels).sum().item()
+                    val_total += imgs.size(0)
 
-        val_acc = val_correct / val_total
-        print(f"After finetuning:  Val Acc: {val_acc:.4f}")
+            val_acc = val_correct / val_total
+            print(f"After finetuning:  Val Acc: {val_acc:.4f}")
+    model.eval()
+    val_correct = 0
+    val_total = 0
+    with torch.no_grad():
+        for imgs, labels in val_loader:
+            imgs = imgs.to(device)
+            labels = labels.to(device)
+            outputs = model(imgs)
+            preds = outputs.argmax(1)
+            val_correct += (preds == labels).sum().item()
+            val_total += imgs.size(0)
+
+    val_acc = val_correct / val_total
+    print(f"After finetuning:  Val Acc: {val_acc:.4f}")
 
     return model
+
