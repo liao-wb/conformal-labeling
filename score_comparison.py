@@ -6,7 +6,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--dataset", type=str, default="resnet152_imagenet_misclassificationscore")
+parser.add_argument("--dataset", type=str, default="resnet34_imagenet_misclassificationscore")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")

@@ -7,7 +7,8 @@ def get_data(dataset):
     if dataset == "gpt-3.5-turbo" or dataset == "gpt-4-turbo" or dataset == "mistral-7b-instruct" or dataset == "Qwen3-8B":
         Y, Yhat, confidence, _ = get_preference_data(dataset)
     else:
-        data = pd.read_csv("./datasets/" + dataset + '.csv')
+        #data = pd.read_csv("./datasets/" + dataset + '.csv')
+        data = pd.read_csv(f"/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/datasets/{dataset}.csv")
         Y = data["Y"].to_numpy()
         confidence = data["confidence"].to_numpy()
         Yhat = None

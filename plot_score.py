@@ -31,8 +31,8 @@ fdr_array = np.zeros(shape=(len(ds_list), args.num_trials))
 power_array = np.zeros(shape=(len(ds_list), args.num_trials))
 selection_size_array = np.zeros(shape=(len(ds_list), args.num_trials))
 
-large_font_size = 30
-small_font_size = 24
+large_font_size = 42
+small_font_size = 34
 
 for i, ds in enumerate(ds_list):
     Y, Yhat, msp_confidence, react_confidence, energy_confidence = get_ood_data(ds)
@@ -59,7 +59,7 @@ for i, ds in enumerate(ds_list):
     p_0 = p_values[y_test != y_test_hat]
     p_1 = p_values[y_test == y_test_hat]
 
-    plt.figure(figsize=(8, 6))
+    plt.figure(figsize=(10, 8))
 
     # 绘制填充的KDE
     sns.kdeplot(p_0, color='#1f77b4', fill=True, alpha=0.5, linewidth=0, label='p_values under H0')  # 蓝色
@@ -77,3 +77,4 @@ for i, ds in enumerate(ds_list):
     plt.legend(fontsize=small_font_size, framealpha=1, shadow=True)
     plt.savefig(f"{args.score_function}.pdf", dpi=300)
     plt.show()
+    print(args.score_function)
