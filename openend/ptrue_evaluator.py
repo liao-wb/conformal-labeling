@@ -13,14 +13,16 @@ class PTrueEvaluator:
             model=f"/mnt/sharedata/ssd_large/common/LLMs/{args.model}",
             trust_remote_code=True,
             tensor_parallel_size=args.tensor_parallel_size,
-            gpu_memory_utilization=0.8,
+            gpu_memory_utilization=0.5,
             max_model_len=args.max_model_len,
         )
 
         # 获取tokenizer用于编码Yes/No
         self.tokenizer = self.llm.get_tokenizer()
-        self.yes_token_id = self._get_first_token_id("Yes")
-        self.no_token_id = self._get_first_token_id("No")
+        #self.yes_token_id = self._get_first_token_id("Yes")
+        #self.no_token_id = self._get_first_token_id("No")
+        self.yes_token_id = self.tokenizer.convert_tokens_to_ids("A")
+        self.no_token_id  = self.tokenizer.convert_tokens_to_ids("B")
         self.args = args
 
         print(f"Yes token ID: {self.yes_token_id}, No token ID: {self.no_token_id}")
@@ -50,7 +52,7 @@ class PTrueEvaluator:
         sampling_params = SamplingParams(
             temperature=1.0,
             max_tokens=1,  # 我们只需要第一个token
-            logprobs=1,  # 获取top-1 logprobs
+            logprobs=20,  # 获取top-1 logprobs
             prompt_logprobs=0  # 不需要prompt的logprobs
         )
 
@@ -65,14 +67,16 @@ class PTrueEvaluator:
                 first_token_logprobs = output.outputs[0].logprobs[0]
 
                 # 提取Yes和No的logprob
-                yes_logprob = first_token_logprobs.get(self.yes_token_id, -float('inf'))
-                no_logprob = first_token_logprobs.get(self.no_token_id, -float('inf'))
+                yes_logprob_obj = first_token_logprobs.get(self.yes_token_id)
+                no_logprob_obj = first_token_logprobs.get(self.no_token_id)
+
+                # Extract the actual logprob value
+                yes_logprob = yes_logprob_obj.logprob if yes_logprob_obj else -float('inf')
+                no_logprob = no_logprob_obj.logprob if no_logprob_obj else -float('inf')
 
                 # 计算概率
                 yes_prob = np.exp(yes_logprob) if yes_logprob != -float('inf') else 0.0
                 no_prob = np.exp(no_logprob) if no_logprob != -float('inf') else 0.0
-
-                # 避免除零错误
                 total = yes_prob + no_prob
                 if total > 0:
                     p_true = yes_prob / total
@@ -87,11 +91,22 @@ class PTrueEvaluator:
         return p_true_scores
 
     def _build_verification_prompt(self, question: str, answer: str) -> str:
-        """构建验证提示"""
-        return f"""Based on the following question: '{question}'
-Is the answer '{answer}' correct?
-You must answer with only a single word: 'Yes' or 'No'.
-Answer:"""
+        return f"""You are given a question and an answer.
+
+Question:
+{question}
+
+We want to verify whether the following answer is correct:
+'{answer}'
+
+Please answer the following binary-choice question:
+
+Which of the following is correct?
+A: The answer above is correct.
+B: The answer above is incorrect.
+
+Your answer (A or B):"""
+
 
 
     def format_prompt(self, example, icl=True):
@@ -138,10 +153,10 @@ Answer:"""
         """Extract the answer from \\boxed{} format"""
         # Pattern to match \boxed{X} where X is A, B, C, or D
         patterns = [
-            r'\\boxed\{([ABCD])\}',  # \boxed{A}
-            r'\\boxed{([ABCD]})',  # \boxed{A} (missing backslash)
-            r'final answer:\s*\\boxed\{([ABCD])\}',
-            r'Final answer:\s*\\boxed\{([ABCD])\}',
+            r'boxed\{([ABCD])\}',  # \boxed{A}
+            r'boxed{([ABCD]})',  # \boxed{A} (missing backslash)
+            r'final answer:\s*boxed\{([ABCD])\}',
+            r'Final answer:\s*boxed\{([ABCD])\}',
             r'\\boxed\{([ABCDabcd])\}',  # case insensitive
         ]
 
@@ -152,14 +167,17 @@ Answer:"""
 
         return None
 
-    def evaluate_dataset(self, dataset: List[Dict], output_path: str = None):
+    def evaluate_dataset(self, dataset):
         """在整个数据集上运行P(True)评估"""
 
         # 提取问题
         questions = [self.format_prompt(item, icl=True) for item in dataset]
+        stop_tokens = ["\boxed{", "}"]
         generation_params = SamplingParams(
             temperature=0.7,
-            top_p=0.9
+            top_p=0.9,
+            max_tokens=1024,
+            stop=stop_tokens
         )
         initial_answers = self.generate_answers(questions, generation_params)
 
@@ -171,11 +189,10 @@ Answer:"""
         results = {
             "Yhat": [],
             "Y": [],
-            "is_correct": [],
             "confidence": [],
         }
         for i, item in enumerate(dataset):
             results['Yhat'].append(self.extract_boxed_answer(initial_answers[i]))
             results['Y'].append(item.get('answer', ''))
             results["confidence"].append(p_true_scores[i])
-        save_result(results, args=self.args)
+        save_result(self.args, results)

@@ -25,7 +25,7 @@ def load_data(dataset_name):
         }
 
         dataset = [reformat(data) for data in dataset]
-        return dataset
+        return dataset[:100]
 
 def save_result(args, results):
     output_dir = './result/'
