@@ -6,7 +6,7 @@ import argparse
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="imagenetv2")
+parser.add_argument("--datasets", type=str, default="deepseek-math-7b-instruct_math500")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=1, help="Number of trials")

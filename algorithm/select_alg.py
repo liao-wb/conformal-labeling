@@ -4,7 +4,6 @@ def selection(Y, Yhat, confidence, cal_indices, alpha, args, calib_ratio=0.5, ra
     """"""
     all_indices = np.arange(len(Y))
     test_indices = np.setdiff1d(all_indices, cal_indices)
-
     y_calib, y_hat_calib, conf_calib = Y[cal_indices], Yhat[cal_indices], confidence[cal_indices]
     y_test, y_hat_test, conf_test = Y[test_indices], Yhat[test_indices], confidence[test_indices]
     n_calib = y_calib.shape[0]

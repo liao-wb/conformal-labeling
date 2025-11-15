@@ -71,7 +71,7 @@ def get_selected_dataloader(train_ds, args, alpha=0.1):
             pred = torch.argmax(prob, dim=-1).detach().cpu()
             ai_label = torch.cat((ai_label, pred), dim=0)
         relabeled_ds = RelabeledDataset(selected_subset, ai_label)
-        relabeled_ds = selected_subset
+        #relabeled_ds = selected_subset
         merged_dataset = ConcatDataset([cal_dataset, relabeled_ds])
         return get_dataloader(merged_dataset, batch_size=64, shuffle=True)
 

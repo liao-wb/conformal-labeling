@@ -8,6 +8,7 @@ import torchvision
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--algorithm', default="cbh", type=str)
+parser.add_argument('--dataset', default="imagenetv2", type=str)
 args = parser.parse_args()
 
 val_dir = "/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val"
@@ -19,11 +20,20 @@ val_tf = transforms.Compose([
                         std=[0.229, 0.224, 0.225])
 ])
 # Use the custom dataset
-#full_ds = ImageNetV2Dataset(val_dir, transform=val_tf, classnames_file="/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt")
-full_ds = torchvision.datasets.ImageFolder(
-        root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
-        transform=val_tf
-    )
+
+if args.dataset == "imagenet":
+    full_ds = torchvision.datasets.ImageFolder(
+            root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
+            transform=val_tf
+        )
+elif args.dataset == "imagenetv2":
+    full_ds = torchvision.datasets.ImageFolder(root=val_dir,
+            transform=val_tf)
+
+class_names = full_ds.classes  # Sorted list: ['0', '1', '10', ..., '999']
+label_remap = {sorted_idx: int(class_name) for sorted_idx, class_name in enumerate(class_names)}
+print(f"Applied label remapping for ImageNetV2. Mapping size: {len(label_remap)}")
+
 train_size = int(len(full_ds) * 0.5)   # 5 000
 test_size  = len(full_ds) - train_size  # 5 000
 
@@ -45,7 +55,7 @@ selected_train_loader = get_selected_dataloader(train_ds, args, alpha=0.1)
 # Model: Pretrained ResNet-34
 # -------------------------
 #model = models.resnet34(weights=models.ResNet34_Weights.IMAGENET1K_V1)
-model = models.resnet18()
+model = models.resnet18(weights=models.ResNet18_Weights.IMAGENET1K_V1)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 model.to(device)
 acc = evaluate(model, val_loader, device)
