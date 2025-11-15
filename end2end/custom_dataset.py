@@ -16,7 +16,7 @@ class RelabeledDataset(Dataset):
 
     def __getitem__(self, idx):
         image, label = self.original_dataset[idx]
-        label = self.relabel[idx]
+        label = self.relabel[idx].item()
 
         return image, label
 

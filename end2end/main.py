@@ -2,7 +2,7 @@ import torch
 from torch.utils.data import DataLoader, random_split
 from torchvision import datasets, models, transforms
 from .utils import get_selected_dataloader, train, evaluate
-from .custom_dataset import ImageNetV2Dataset
+from .relabeled_dataset import RemapDataset
 import argparse
 import torchvision
 
@@ -11,7 +11,7 @@ parser.add_argument('--algorithm', default="cbh", type=str)
 parser.add_argument('--dataset', default="imagenetv2", type=str)
 args = parser.parse_args()
 
-val_dir = "/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val"
+
 val_tf = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
@@ -27,12 +27,14 @@ if args.dataset == "imagenet":
             transform=val_tf
         )
 elif args.dataset == "imagenetv2":
+    val_dir = "/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val"
     full_ds = torchvision.datasets.ImageFolder(root=val_dir,
             transform=val_tf)
 
-class_names = full_ds.classes  # Sorted list: ['0', '1', '10', ..., '999']
-label_remap = {sorted_idx: int(class_name) for sorted_idx, class_name in enumerate(class_names)}
-print(f"Applied label remapping for ImageNetV2. Mapping size: {len(label_remap)}")
+    class_names = full_ds.classes  # Sorted list: ['0', '1', '10', ..., '999']
+    label_remap = {sorted_idx: int(class_name) for sorted_idx, class_name in enumerate(class_names)}
+    print(f"Applied label remapping for ImageNetV2. Mapping size: {len(label_remap)}")
+    full_ds = RemapDataset(full_ds, label_remap)
 
 train_size = int(len(full_ds) * 0.5)   # 5 000
 test_size  = len(full_ds) - train_size  # 5 000
@@ -61,4 +63,4 @@ model.to(device)
 acc = evaluate(model, val_loader, device)
 print(f"Before finetuning: Val Accuracy: {acc}")
 
-train(model, selected_train_loader, val_loader, epochs=100, lr=1e-3, weight_decay=1e-4)
+train(model, selected_train_loader, val_loader, epochs=50, lr=1e-4, weight_decay=1e-3)

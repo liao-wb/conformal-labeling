@@ -16,7 +16,7 @@ class RelabeledDataset(Dataset):
 
     def __getitem__(self, idx):
         image, label = self.original_dataset[idx]
-        label = self.relabel[idx]
+        label = self.relabel[idx].item()
 
         return image, label
 
@@ -24,24 +24,23 @@ class RelabeledDataset(Dataset):
 from torch.utils.data import Dataset
 
 
-class RelabeledDataset(Dataset):
-    def __init__(self, selected_dataset, relabel):
-        """
-        Args:
-            original_dataset: The original ImageFolder dataset
-            label_mapping: Dict mapping old_label -> new_label
-            specific_indices: Dict mapping indices -> new_labels for specific samples
-        """
-        self.relabel = relabel
-        self.original_dataset = selected_dataset
-    def __len__(self):
-        return len(self.original_dataset)
+# class RelabeledDataset(Dataset):
+#     def __init__(self, selected_dataset, relabel):
+#         """
+#         Args:
+#             original_dataset: The original ImageFolder dataset
+#             label_mapping: Dict mapping old_label -> new_label
+#             specific_indices: Dict mapping indices -> new_labels for specific samples
+#         """
+#         self.original_dataset = selected_dataset
+#     def __len__(self):
+#         return len(self.original_dataset)
 
-    def __getitem__(self, idx):
-        image, label = self.original_dataset[idx]
-        label = self.relabel[idx]
+#     def __getitem__(self, idx):
+#         image, label = self.original_dataset[idx]
+#         label = self.relabel[idx]
 
-        return image, label
+#         return image, label
 
 
 import torch
@@ -105,3 +104,17 @@ class ImageNetV2Dataset(Dataset):
         if self.transform:
             image = self.transform(image)
         return image, label
+    
+
+class RemapDataset(torch.utils.data.Dataset):
+    def __init__(self, original_dataset, label_remap):
+        self.original_dataset = original_dataset
+        self.label_remap = label_remap  # dict: {old_label -> new_label}
+    
+    def __len__(self):
+        return len(self.original_dataset)
+    
+    def __getitem__(self, idx):
+        image, label = self.original_dataset[idx]
+        remapped_label = self.label_remap[label]
+        return image, remapped_label

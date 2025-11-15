@@ -16,7 +16,7 @@ def get_selected_dataloader(train_ds, args, alpha=0.1):
     model.eval()
     origin_train_loader = get_dataloader(train_ds, batch_size=1024)
     selected_acc = evaluate(model, origin_train_loader)
-    print(f"Accuracy on the selected subset: {selected_acc}")
+    print(f"Accuracy on the whole 5000 traning  dataset: {selected_acc}")
     with torch.no_grad():
         confidence = torch.tensor([], device="cuda")
         Yhat = torch.tensor([], device="cuda", dtype=int)
@@ -99,8 +99,8 @@ def train(model, train_loader, val_loader, epochs=15, lr=3e-5, weight_decay=0.01
     model.to(device)
     model = nn.DataParallel(model)
     # Loss + Optimizer + Scheduler
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1)
+    optimizer = optim.SGD(model.parameters(), lr=lr, weight_decay=weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=epochs)
 
     for epoch in tqdm(range(epochs)):
@@ -134,7 +134,7 @@ def train(model, train_loader, val_loader, epochs=15, lr=3e-5, weight_decay=0.01
         train_acc = total_correct / total_samples
         print(f"  Train Loss: {train_loss:.4f}, Train Acc: {train_acc:.4f}")
 
-        if epoch % 10 == 0:
+        if epoch % 1 == 0:
             model.eval()
             val_correct = 0
             val_total = 0
