@@ -47,10 +47,6 @@ class PTrueEvaluator:
         for question, answer in zip(questions, answers):
             prompt = self._build_verification_prompt(question, answer)
             prompts.append(prompt)
-        for i in range(5):
-            print(f"Prompt {i}")
-            print(prompts[i])
-            print()
         # 设置采样参数来获取logits
         sampling_params = SamplingParams(
             temperature=1.0,
@@ -108,7 +104,9 @@ Which of the following is correct?
 A: The answer above is correct.
 B: The answer above is incorrect.
 
-Response with A or B. No other words or explanation:\n"""
+Response with A or B. No other words or explanation:\n
+Answer: 
+"""
 
 
 
@@ -178,7 +176,7 @@ Now answer this question:
         generation_params = SamplingParams(
             temperature=0.3,
             top_p=0.9,
-            max_tokens=1024,
+            max_tokens=2048,
             #stop = stop_tokens
         )
         initial_answers = self.generate_answers(questions, generation_params)
