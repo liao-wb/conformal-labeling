@@ -47,7 +47,10 @@ class PTrueEvaluator:
         for question, answer in zip(questions, answers):
             prompt = self._build_verification_prompt(question, answer)
             prompts.append(prompt)
-
+        for i in range(5):
+            print(f"Prompt {i}")
+            print(prompts[i])
+            print()
         # 设置采样参数来获取logits
         sampling_params = SamplingParams(
             temperature=1.0,
@@ -105,65 +108,64 @@ Which of the following is correct?
 A: The answer above is correct.
 B: The answer above is incorrect.
 
-Your answer (A or B):"""
+Response with A or B. No other words or explanation:\n"""
 
 
 
     def format_prompt(self, example, icl=True):
-        icl_context = """The following are multi choice questions. Please reason step by step, and conclude your final choice within \\boxed{}:
+        icl_context = """Please answer the following multiple choice question and put your final answer in \\boxed{{}}.
 
-        Example 1:
-        Question: What is the capital of France?
-        A: London
-        B: Berlin
-        C: Paris
-        D: Madrid
+Example:
+Question: What is the capital of France?
+A: London
+B: Berlin  
+C: Paris
+D: Madrid
 
-        Reasoning: The question asks for the capital of France. London is the capital of the United Kingdom, Berlin is the capital of Germany, Paris is the capital of France, and Madrid is the capital of Spain. Therefore, Paris is the correct answer.
-        Final answer: \\boxed{C}
+Final answer: \\boxed{{C}}
 
-        Example 2:
-        Question: Which gas do plants absorb during photosynthesis?
-        A: Oxygen
-        B: Carbon dioxide
-        C: Nitrogen
-        D: Hydrogen
+Now answer this question:
 
-        Reasoning: Photosynthesis is the process where plants convert light energy into chemical energy. They take in carbon dioxide and water, and produce glucose and oxygen. Therefore, plants absorb carbon dioxide during photosynthesis.
-        Final answer: \\boxed{B}
-
-
-        """
-        if icl:
-            prompt = icl_context + 'The following is a multi choice question. Please reason step by step, and conclude your final choice within \\boxed{}:'
-        else:
-            prompt = 'The following is a multi choice question. Please reason step by step, and conclude your final choice within \\boxed{}:'
+"""
         question = example['question']
         label = example['label']
         text = example['choices']
 
+        prompt = ""
         prompt += ('Question: ' + question + '\n')
 
         for i in range(len(text)):
-            prompt += label[i] + ': ' + text[i] + '\n'
+            prompt += (label[i] + ': ' + text[i] + '\n')
 
+        if icl:
+            prompt = icl_context + prompt
         return prompt
 
     def extract_boxed_answer(self, text):
-        """Extract the answer from \\boxed{} format"""
-        # Pattern to match \boxed{X} where X is A, B, C, or D
         patterns = [
-            r'boxed\{([ABCD])\}',  # \boxed{A}
-            r'boxed{([ABCD]})',  # \boxed{A} (missing backslash)
-            r'final answer:\s*boxed\{([ABCD])\}',
-            r'Final answer:\s*boxed\{([ABCD])\}',
-            r'\\boxed\{([ABCDabcd])\}',  # case insensitive
+            r'\\boxed\{\{([ABCD])\}\}',  # \boxed{{C}} - 双花括号
+            r'\\boxed\{([ABCD])\}',      # \boxed{C} - 单花括号
+            r'boxed\{\{([ABCD])\}\}',    # boxed{{C}} (缺少反斜杠)
+            r'boxed\{([ABCD])\}',        # boxed{C} (缺少反斜杠)
+            r'final answer:\s*\\boxed\{\{([ABCD])\}\}',
+            r'Final answer:\s*\\boxed\{\{([ABCD])\}\}',
+            r'final answer:\s*\\boxed\{([ABCD])\}',
+            r'Final answer:\s*\\boxed\{([ABCD])\}',
+            r'\\boxed\{\{([ABCDabcd])\}\}',  # 大小写不敏感
+            r'\\boxed\{([ABCDabcd])\}',      # 大小写不敏感
         ]
 
         for pattern in patterns:
             match = re.search(pattern, text, re.IGNORECASE)
             if match:
-                return match.group(1).upper()  # Ensure uppercase
+                return match.group(1).upper()  # 确保大写
+
+        # 如果上面的模式都没匹配到，尝试更宽松的匹配
+        # 匹配 \boxed{ 和 } 之间的任何单个字母
+        loose_pattern = r'\\boxed\{\{?([A-Da-d])\}?\}'
+        match = re.search(loose_pattern, text, re.IGNORECASE)
+        if match:
+            return match.group(1).upper()
 
         return None
 
@@ -172,15 +174,21 @@ Your answer (A or B):"""
 
         # 提取问题
         questions = [self.format_prompt(item, icl=True) for item in dataset]
-        stop_tokens = ["\boxed{", "}"]
+        stop_tokens = ["}}"]
         generation_params = SamplingParams(
-            temperature=0.7,
+            temperature=0.3,
             top_p=0.9,
             max_tokens=1024,
-            stop=stop_tokens
+            #stop = stop_tokens
         )
         initial_answers = self.generate_answers(questions, generation_params)
 
+        # for i in range(5):
+        #     print(f"Question {i}")
+        #     print("Prompt")
+        #     print(questions[i])
+        #     print("Content of answer")
+        #     print(initial_answers[i])
         print("Step 2: Calculating P(True) scores...")
         # 计算P(True)分数
         p_true_scores = self.calculate_p_true([self.format_prompt(item, icl=False) for item in dataset], initial_answers)
