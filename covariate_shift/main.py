@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.stats import multivariate_normal
-
+from sklearn.ensemble import RandomForestClassifier
+from utils import total_variation_monte_carlo
+from algorithm.select_alg import selection
+import argparse
 
 def generate_data(mu, cov, n_samples, beta):
     """
@@ -51,22 +54,69 @@ def compute_weights(x, mu_source, cov_source, mu_target, cov_target):
 n_features = 10
 
 # Define beta (coefficients for P(y|x) - fixed across domains)
-beta = np.ones(n_features)  # Simple: all features contribute equally; adjust as needed
+beta = np.ones(n_features) * 0.3  # Simple: all features contribute equally; adjust as needed
 
 # Source: mean zero, variance 4 (sigma=2)
 mu_source = np.zeros(n_features)
-cov_source = np.eye(n_features) * 4  # Isotropic covariance
+cov_source = np.eye(n_features) # Isotropic covariance
 
 # Target: shifted mean, variance 1 (sigma=1)
-mu_target = np.ones(n_features) * 3
-cov_target = np.eye(n_features) * 1
+mu_target = np.ones(n_features) * 0.1
+cov_target = np.eye(n_features)
 
 # Generate data
-x_source, y_source = generate_data(mu_source, cov_source, n_samples=1000, beta=beta)
-x_target, y_target = generate_data(mu_target, cov_target, n_samples=500, beta=beta)
+x_train, y_train = generate_data(mu_source, cov_source, n_samples=5000, beta=beta)
+x_source, y_source = generate_data(mu_source, cov_source, n_samples=2000, beta=beta)
+x_target, y_target = generate_data(mu_target, cov_target, n_samples=2000, beta=beta)
 
-# Compute weights for target points
-weights = compute_weights(x_target, mu_source, cov_source, mu_target, cov_target)
+classifier = RandomForestClassifier(n_estimators=500)
+classifier.fit(x_train, y_train)
 
-# Print a few example weights
-print("Sample weights:", weights[:5])
+# Compute accuracy
+source_accuracy = classifier.score(x_source, y_source)
+target_accuracy = classifier.score(x_target, y_target)
+
+
+print(f"TVD: {total_variation_monte_carlo(mu_source, cov_source, mu_target, cov_target,)}")
+print(f"Source Accuracy: {source_accuracy:.4f}")
+print(f"Target Accuracy: {target_accuracy:.4f}")
+
+
+# Get predicted probabilities for each x
+source_probs = classifier.predict_proba(x_source)  # Shape: (n_samples, 2)
+target_probs = classifier.predict_proba(x_target)  # Shape: (n_samples, 2)
+
+cal_Yhat = np.argmax(source_probs, axis=1)
+cal_confidence = np.max(target_probs, axis=1)
+cal_Y = y_source
+
+test_Yhat = np.argmax(target_probs, axis=1)
+test_confidence = np.max(target_probs, axis=1)
+test_Y = y_target
+
+Y = np.concatenate((cal_Y, test_Y), axis=0)
+Yhat = np.concatenate((cal_Yhat, test_Yhat), axis=0)
+confidence = np.concatenate((cal_confidence, test_confidence), axis=0)
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument("--datasets", type=str, default="imagenetv2")
+parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
+parser.add_argument("--random", default="True", choices=["True", "False"])
+parser.add_argument("--num_trials", type=int, default=1, help="Number of trials")
+parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
+parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
+parser.add_argument("--temperature", type=float, default=1, help="Temperature")
+args = parser.parse_args()
+
+n_samples = len(Y)
+n_calib = len(cal_Y)
+n_test = n_samples - n_calib
+# Create boolean mask
+cal_mask = np.zeros(len(Y), dtype=bool)
+cal_mask[:n_calib] = True
+
+print(Yhat[:100])
+print(confidence[:200])
+fdr, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_mask, args.alpha, args, calib_ratio=len(cal_Y) / len(Y), random=True)
+print(fdr, power)
