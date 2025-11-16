@@ -55,12 +55,11 @@ class NaiveModel(nn.Module):
 class MLPModel(nn.Module):
     def __init__(self, input_size, hidden_size, output_size=1):
         super(MLPModel, self).__init__()
+        hidden_size = input_size // 8
         self.network = nn.Sequential(
             nn.Linear(input_size, hidden_size),
             nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size // 2),
-            nn.ReLU(),
-            nn.Linear(hidden_size // 2, 2)
+            nn.Linear(hidden_size, 2),
             #nn.softmax()  # 输出0-1之间的概率
         )
 
