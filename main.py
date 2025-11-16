@@ -2,16 +2,15 @@ import numpy as np
 from algorithm.select_alg import selection
 from algorithm.preprocess import get_data
 import argparse
-
-
+from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="deepseek-math-7b-instruct_math500")
+parser.add_argument("--datasets", type=str, default="resnet34_imagenet")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=1, help="Number of trials")
-parser.add_argument("--alpha", default=0.05, type=float, help="FDR threshold q")
-parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
+parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
+parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
+parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "qbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
 args = parser.parse_args()
 
@@ -32,21 +31,20 @@ selection_size_array = np.zeros(shape=(len(ds_list), args.num_trials))
 for i, ds in enumerate(ds_list):
     Y, Yhat, confidence = get_data(ds)
 
-
     alpha = args.alpha
     num_trials = args.num_trials
     fdr_list = []
     power_list = []
     selection_size_list = []
     error_list = []
-    for j in range(num_trials):
+    for j in tqdm(range(num_trials)):
         n_samples = len(Y)
         n_calib = int(n_samples * args.calib_ratio)
         n_test = n_samples - n_calib
         cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
 
         fdp, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
-        print(f"{np.sum(selection_indices)}, {selection_size}")
+        #print(f"{np.sum(selection_indices)}, {selection_size}")
 
 
         fdr_list.append(fdp)
@@ -59,10 +57,10 @@ for i, ds in enumerate(ds_list):
     selection_size_array[i] = np.array(selection_size_list)
 
     #print(f"Mean Overall Error: {np.mean(np.array(error_list)) * 100}")
-    print(f"Mean FDR: {np.mean(fdr_list)}")
-    print(f"90% Quantile Risk: {np.quantile(fdr_list, 0.9)}")
-    print(f"Mean Power: {np.mean(power_list) * 100}")
-    print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}")
+    print(f"Mean FDR: {np.mean(fdr_list) * 100}%")
+    #print(f"90% Quantile Risk: {np.quantile(fdr_list, 0.9)}")
+    print(f"Mean Power: {np.mean(power_list) * 100}%")
+    print(f"Budget save:{np.mean(selection_size_array) / len(Y) * 100}%")
 
     print(f"Error:{100 - np.sum(Yhat==Y)/len(Y) * 100}")
 
@@ -131,3 +129,7 @@ def calculate_ece_multiclass(y_true, y_pred, confidence_scores, n_bins=10):
     return ece
 
 print(f"ECE: {calculate_ece_multiclass(Y, Yhat, confidence)}")
+
+print(f"Train score ECE: {calculate_ece_multiclass((Y==Yhat).astype(int), (confidence >= 0.5).astype(int), confidence, True)}")
+
+print(np.sum((confidence >= 0.5) * (Y==Yhat)) / len(Y))

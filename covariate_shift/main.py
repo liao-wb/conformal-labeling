@@ -1,46 +1,73 @@
 import numpy as np
 from scipy.stats import multivariate_normal
 from sklearn.ensemble import RandomForestClassifier
-from utils import total_variation_monte_carlo
+from utils import total_variation_monte_carlo, calculate_kl_divergence_multivariate_normal
 from algorithm.select_alg import selection
 import argparse
 
-def generate_data(mu, cov, n_samples, beta=None):
+import numpy as np
+
+def generate_data(mu, cov, n_samples, beta=0.5, w1=None, w2=None, t=0.4):
     """
-    Generate multivariate data where P(y|x) is deterministic and fixed:
-        y =
-            0   if w^T x < -t
-            1   if -t <= w^T x <= t
-            2   if w^T x > t
+    Generate a **harder** 3-class classification dataset with **fixed** decision boundary.
+    P(y|x) is deterministic (no randomness in w1/w2).
 
-    This creates a 3-class classification problem.
+    y =
+        0 if  w1·x + w2·(x²) + σ·ε < -t
+        1 if -t <= w1·x + w2·(x²) + σ·ε <= t
+        2 if  w1·x + w2·(x²) + σ·ε > t
 
-    Parameters:
-    - mu: mean of P(x)
-    - cov: covariance of P(x)
-    - n_samples: number of samples
-    - beta: ignored
+    Parameters
+    ----------
+    mu : array-like, shape (d,)
+        Mean of P(x) ~ N(mu, cov).
+    cov : array-like, shape (d, d)
+        Covariance of P(x).
+    n_samples : int
+        Number of samples.
+    beta : float, default 0.5
+        Noise level σ = beta.
+    w1 : array-like or None, default None
+        Linear weights. If None → all-ones normalized.
+    w2 : array-like or None, default None
+        Quadratic weights. If None → 0.3 * all-ones.
+    t : float, default 0.4
+        Threshold for class boundaries.
 
-    Returns:
-    - x: shape (N, d)
-    - y: integer labels in {0,1,2}
+    Returns
+    -------
+    x : ndarray, shape (n_samples, d)
+    y : ndarray, shape (n_samples,), dtype=int
     """
-    n_features = len(mu)
-
-    # sample x
+    d = len(mu)
     x = np.random.multivariate_normal(mu, cov, n_samples)
 
-    # fixed w, fixed P(y|x)
-    w = np.ones(n_features) / np.sqrt(n_features)
-    logits = x.dot(w)
+    # ---- 固定 w1 (默认: 归一化的全1向量) ----
+    if w1 is None:
+        w1 = np.ones(d) / np.sqrt(d)          # 固定线性方向
+    else:
+        w1 = np.asarray(w1, dtype=float)
+        w1 /= np.linalg.norm(w1)              # 仍归一化，保持一致尺度
 
-    # ---- Key: thresholds that produce 3 classes ----
-    # You can tune t to control task difficulty!
-    t = 0.5
+    # ---- 固定 w2 (默认: 0.3 * 全1向量) ----
+    if w2 is None:
+        w2 = 0.3 * np.ones(d)                 # 固定二次强度
+    else:
+        w2 = np.asarray(w2, dtype=float)
 
-    # assign 3 classes deterministically
+    # ---- 非线性 logits (固定边界) ----
+    linear_part    = x @ w1
+    quadratic_part = (x ** 2) @ w2
+    raw_logits     = linear_part + quadratic_part
+
+    # ---- 加噪声 (β 控制) ----
+    #sigma = float(beta)
+    #noise = sigma * np.random.randn(n_samples)
+    logits = raw_logits
+
+    # ---- 确定性标签 ----
     y = np.zeros(n_samples, dtype=int)
-    y[logits > t] = 2
+    y[logits >  t] = 2
     y[(logits >= -t) & (logits <= t)] = 1
     y[logits < -t] = 0
 
@@ -51,21 +78,21 @@ def generate_data(mu, cov, n_samples, beta=None):
 n_features = 10
 
 mu_source = np.zeros(n_features)
-cov_source = np.eye(n_features) # Isotropic covariance
+cov_source = np.eye(n_features) * 0.1 # Isotropic covariance
 # Target: shifted mean, variance 1 (sigma=1)
 mu_target = np.zeros(n_features)
-cov_target = np.eye(n_features) * 3
+cov_target = np.eye(n_features) * 0.2
 
-beta = np.ones(n_features) * 0.3  # Simple: all features contribute equally; adjust as needed
+beta = np.ones(n_features) * 0.1  # Simple: all features contribute equally; adjust as needed
 x_train, y_train = generate_data(mu_source, cov_source, n_samples=5000, beta=beta)
 
-classifier = RandomForestClassifier(n_estimators=100)
+classifier = RandomForestClassifier(n_estimators=50)
 classifier.fit(x_train, y_train)
 
 fdr_list = []
 power_list = []
 
-for i in range(10):
+for i in range(20):
     # Example usage with 10 features
 
     # Define beta (coefficients for P(y|x) - fixed across domains)
@@ -127,5 +154,6 @@ for i in range(10):
     power_list.append(power)
 
 print(f"TVD: {total_variation_monte_carlo(mu_source, cov_source, mu_target, cov_target,)}")
+print(f"KL Divergence: {calculate_kl_divergence_multivariate_normal(mu_source, cov_source, mu_target, cov_target,)}")
 print(f"FDR: {np.mean(np.array(fdr_list))}")
 print(f"Power: {np.mean(np.array(power_list))}")
