@@ -8,8 +8,8 @@ import pandas as pd
 from torchvision.models import ResNet34_Weights, DenseNet161_Weights, ResNeXt50_32X4D_Weights, ResNet152_Weights
 import numpy as np
 from model import NaiveModel, MLPModel
-from .utils import train_uncertainty_predictor
-
+from utils import train_uncertainty_predictor
+import torch.nn as nn
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--batch_size", type=int, default=64, help="batch size")
@@ -17,7 +17,6 @@ parser.add_argument("--dataset", type=str, default="imagenet")
 parser.add_argument("--model", type=str, default="resnet34")
 parser.add_argument("--epoch", type=int, default=50)
 parser.add_argument("--lr", type=float, default=1e-3)
-parser.add_argument("--batch_size", type=int, default=64, help="batch size")
 args = parser.parse_args()
 
 # Move models to GPU if available
@@ -37,7 +36,7 @@ else:
     raise NotImplementedError(f"Model {model_name} not supported")
 
 
-model = NaiveModel(model)
+model = NaiveModel(nn.DataParallel(model))
 val_transform = transforms.Compose([
     transforms.Resize(256),
     transforms.CenterCrop(224),
@@ -61,9 +60,10 @@ train_dataset, remaining_dataset = random_split(
 )
 
 
-train_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=64)
+train_loader = DataLoader(train_dataset, batch_size=1024, shuffle=False, num_workers=64)
 
 mlp = MLPModel(input_size=512, hidden_size=256).to(device)
+mlp = nn.DataParallel(mlp)
 mlp.train()
 
 mlp = train_uncertainty_predictor(model, mlp, train_loader, device, args)
@@ -84,11 +84,13 @@ with torch.no_grad():
         logits = model(data)
         prob = torch.softmax(logits, dim=-1)
         y = torch.argmax(prob, dim=-1)
-        conf = mlp(feature).view(-1)
+        #conf = mlp(feature).view(-1)
+        conf = torch.softmax(mlp(feature), dim=-1)[:, 1].view(-1)
 
         # Store results
         all_confidences.extend(conf.cpu().numpy())
         all_y_hat.extend(y.cpu().numpy())
+        all_y_true.extend(target.cpu().numpy())
 
 
 # Create DataFrame with correct labels
