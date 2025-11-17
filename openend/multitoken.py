@@ -2,8 +2,9 @@ import argparse
 from typing import List, Dict
 import numpy as np
 import json
-from ptrue_evaluator import PTrueEvaluator
-from utils import load_data
+#from ptrue_evaluator import PTrueEvaluator
+from new_ptrue import PTrueEvaluator
+from utils import get_dataset
 
 
 
@@ -12,7 +13,7 @@ def main():
     parser = argparse.ArgumentParser(description='Evaluate P(True) scores using vLLM')
     parser.add_argument('--model', type=str, default="Llama-3.1-8B-Instruct",
                         help='Path to the model or model name')
-    parser.add_argument('--dataset', type=str, default="mmlu",
+    parser.add_argument('--dataset', type=str, default="commonsenseqa",
                         help='Path to the dataset file (JSON or JSONL)')
     parser.add_argument("--max_model_len", type=int, default=4096)
     parser.add_argument("--tensor_parallel_size", type=int, default=4)
@@ -21,7 +22,7 @@ def main():
 
     # 加载数据集
     print(f"Loading dataset from {args.dataset}...")
-    dataset = load_data(args.dataset)
+    dataset, label_list = get_dataset(args)
     print(f"Loaded {len(dataset)} examples")
 
     # 初始化评估器

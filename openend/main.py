@@ -3,8 +3,8 @@ from typing import List, Dict
 import numpy as np
 import json
 import os
-from math500_ptrue import PTrueEvaluator
-
+#from math500_ptrue import PTrueEvaluator
+from new_ptrue import PTrueEvaluator
 
 
 

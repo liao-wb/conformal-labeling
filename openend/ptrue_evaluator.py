@@ -49,7 +49,7 @@ class PTrueEvaluator:
             prompts.append(prompt)
         # 设置采样参数来获取logits
         sampling_params = SamplingParams(
-            temperature=1.0,
+            temperature=2.0,
             max_tokens=1,  # 我们只需要第一个token
             logprobs=20,  # 获取top-1 logprobs
             prompt_logprobs=0  # 不需要prompt的logprobs
