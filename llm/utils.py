@@ -110,19 +110,20 @@ def parse_options(options_str):
     options = re.findall(r'[a-z]\)\s*([^a-z]*)', options_str.lower())
     return [opt.strip() for opt in options]
 
-def format_example(example):
+def format_example(example, prompt_type=1):
 
-    prompt = 'The following are multi choice questions. Give ONLY the correct option, no other words or explanation:\n'
+    if prompt_type == 1:
+        prompt = 'The following are multi choice questions. Give ONLY the correct option, no other words or explanation:\n'
 
-    question = example['question']
-    label = example['label']
-    answer = example['answer']
-    text = example['choices']
+        question = example['question']
+        label = example['label']
+        answer = example['answer']
+        text = example['choices']
 
-    prompt += ('Question: ' + question + '\n')
+        prompt += ('Question: ' + question + '\n')
 
-    for i in range(len(text)):
-        prompt += label[i] + ': ' + text[i] + '\n'
-    prompt += 'Answer: '
+        for i in range(len(text)):
+            prompt += label[i] + ': ' + text[i] + '\n'
+        prompt += 'Answer: '
 
-    return prompt, answer
+        return prompt, answer

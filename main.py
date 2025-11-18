@@ -5,7 +5,7 @@ import argparse
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--datasets", type=str, default="resnet34_imagenet")
+parser.add_argument("--datasets", type=str, default="Llama-3.1-8B-Instruct_arc_easy")
 parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
 parser.add_argument("--random", default="True", choices=["True", "False"])
 parser.add_argument("--num_trials", type=int, default=10, help="Number of trials")
@@ -42,7 +42,9 @@ for i, ds in enumerate(ds_list):
         n_calib = int(n_samples * args.calib_ratio)
         n_test = n_samples - n_calib
         cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
-
+        print(Y[:10], Yhat[:10], confidence[:10])
+        idx = Yhat == "E"
+        Yhat[idx] = Y[idx]
         fdp, power, selection_size, selection_indices = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
         #print(f"{np.sum(selection_indices)}, {selection_size}")
 

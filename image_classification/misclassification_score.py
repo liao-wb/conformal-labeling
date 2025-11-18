@@ -72,6 +72,7 @@ all_alpha_confidences = []
 all_y_hat_odin = []
 all_y_hat = []
 all_y_true = []
+all_energy_confidences = []
 
 temperature = args.temperature
 epsilon = args.epsilon
@@ -96,6 +97,8 @@ for data, target in dataloader:
         alpha_confidence = torch.sum(prob ** 2, dim=-1)
         all_alpha_confidences.extend(alpha_confidence.detach().cpu().numpy())
 
+        energy_conf = torch.logsumexp(logits, dim=-1)
+        all_energy_confidences.extend(energy_conf.detach().cpu().numpy())
 
 
     # Remap targets if needed
@@ -110,7 +113,8 @@ df = pd.DataFrame({
     "Yhat": all_y_hat,
     "msp_confidence": all_msp_confidences,
     "entropy_confidence": all_entropy_confidences,
-    "alpha_confidence": all_alpha_confidences
+    "alpha_confidence": all_alpha_confidences,
+    "energy_confidence": all_energy_confidences,
 })
 
 # Save to CSV

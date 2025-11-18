@@ -14,7 +14,7 @@ parser.add_argument("--num_trials", type=int, default=1, help="Number of trials"
 parser.add_argument("--alpha", default=0.1, type=float, help="FDR threshold q")
 parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
 parser.add_argument("--temperature", type=float, default=1, help="Temperature")
-parser.add_argument("--score_function", default="alpha")
+parser.add_argument("--score_function", default="entropy")
 args = parser.parse_args()
 
 dataset = args.datasets
@@ -60,6 +60,7 @@ for i, ds in enumerate(ds_list):
     p_1 = p_values[y_test == y_test_hat]
 
     plt.figure(figsize=(10, 8))
+    plt.ylim(0, 8.2)
 
     # 绘制填充的KDE
     sns.kdeplot(p_0, color='#1f77b4', fill=True, alpha=0.5, linewidth=0, label='p_values under H0')  # 蓝色
