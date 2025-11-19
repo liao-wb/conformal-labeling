@@ -12,6 +12,7 @@ parser.add_argument("--dataset", type=str, default="mathqa")
 parser.add_argument("--tensor_parallel_size", type=int, default=4)
 parser.add_argument("--batch_size", type=int, default=32)
 parser.add_argument("--max_model_len", type=int, default=1024)
+parser.add_argument("--prompt_type", type=int, default=1)
 #parser.add_argument("--subject", type=str, default="college_biology")  # MMLU has different subjects
 
 
@@ -45,7 +46,7 @@ results = {
 indices = len(dataset)
 input_texts, labels = [], []
 for example in dataset:
-    input_text, label = format_example(example)
+    input_text, label = format_example(example, prompt_type=args.prompt_type)
     input_texts.append(input_text)
     labels.append(label)
 

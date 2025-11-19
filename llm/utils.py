@@ -112,18 +112,37 @@ def parse_options(options_str):
 
 def format_example(example, prompt_type=1):
 
+    question = example['question']
+    label = example['label']
+    answer = example['answer']
+    choices = example['choices']
+
+    # Prompt Type 1 (original)
     if prompt_type == 1:
-        prompt = 'The following are multi choice questions. Give ONLY the correct option, no other words or explanation:\n'
-
-        question = example['question']
-        label = example['label']
-        answer = example['answer']
-        text = example['choices']
-
-        prompt += ('Question: ' + question + '\n')
-
-        for i in range(len(text)):
-            prompt += label[i] + ': ' + text[i] + '\n'
-        prompt += 'Answer: '
-
+        prompt = "The following are multi choice questions. Give ONLY the correct option, no other words or explanation:\n"
+        prompt += f"Question: {question}\n"
+        for i in range(len(choices)):
+            prompt += f"{label[i]}: {choices[i]}\n"
+        prompt += "Answer: "
         return prompt, answer
+
+    # Prompt Type 2 (variant 1)
+    elif prompt_type == 2:
+        prompt = "You will be given multiple-choice questions. Respond with ONLY the letter of the correct choice. No explanations.\n"
+        prompt += f"\nQuestion: {question}\n\n"
+        for i in range(len(choices)):
+            prompt += f"{label[i]}: {choices[i]}\n"
+        prompt += "\nAnswer: "
+        return prompt, answer
+
+    # Prompt Type 3 (variant 2)
+    elif prompt_type == 3:
+        prompt = "Answer the following multiple-choice question. Output ONLY the correct option (A, B, C, etc.). No other text.\n"
+        prompt += f"\nQuestion: {question}\n\nOptions:\n"
+        for i in range(len(choices)):
+            prompt += f"{label[i]}: {choices[i]}\n"
+        prompt += "\nCorrect option: "
+        return prompt, answer
+
+    else:
+        raise ValueError("Invalid prompt_type. Choose 1, 2, or 3.")
