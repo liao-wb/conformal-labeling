@@ -53,7 +53,7 @@ elif args.dataset == "imagenetv2":
     ])
     # Use the custom dataset
     # full_ds = ImageNetV2Dataset(val_dir, transform=val_tf, classnames_file="/mnt/sharedata/ssd_small/common/datasets/imagenetv2/classnames.txt")
-    full_ds = torchvision.datasets.ImageFolder(
+    test_dataset = torchvision.datasets.ImageFolder(
         root="/mnt/sharedata/ssd_small/common/datasets/imagenet/images/val",
         transform=val_tf
     )
@@ -61,13 +61,26 @@ elif args.dataset == "imagenetv2":
     #     root="/mnt/sharedata/ssd_small/common/datasets/imagenetv2/imagenetv2-matched-frequency-format-val",
     #     transform=val_transform
     # )
+elif args.dataset == "imagenetc1":
+    val_dir = "/mnt/sharedata/ssd_small/common/datasets/imagenet-corruption/brightness/1"
+    val_tf = transforms.Compose([
+        transforms.Resize(256),
+        transforms.CenterCrop(224),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                             std=[0.229, 0.224, 0.225])
+    ])
+    test_dataset = torchvision.datasets.ImageFolder(
+        root=val_dir,
+        transform=val_tf
+    )
 else:
     raise NotImplementedError(f"Dataset {args.dataset} not supported")
 
 # For ImageNetV2, remap labels to match ImageNet class indices (0-999)
 # ImageFolder sorts folder names lexicographically, but folders are named '0' to '999'
 label_remap = None
-if args.dataset == "imagenetv2":
+if args.dataset != "imagenet":
     class_names = test_dataset.classes  # Sorted list: ['0', '1', '10', ..., '999']
     label_remap = {sorted_idx: int(class_name) for sorted_idx, class_name in enumerate(class_names)}
     print(f"Applied label remapping for ImageNetV2. Mapping size: {len(label_remap)}")
