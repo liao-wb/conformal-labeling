@@ -1,7 +1,13 @@
-torch
-torchvision
-vllm
+torch>=2.0.0
+torchvision>=0.15.0
 numpy
 pandas
 tqdm
 matplotlib
+seaborn
+scipy
+scikit-learn
+datasets
+vllm>=0.4.0
+clip 
+# Note: install clip via: pip install git+https://github.com/openai/CLIP.git

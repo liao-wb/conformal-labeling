@@ -8,7 +8,7 @@ def get_data(dataset):
         Y, Yhat, confidence, _ = get_preference_data(dataset)
     else:
         #data = pd.read_csv("./datasets/" + dataset + '.csv')
-        data = pd.read_csv(f"/mnt/e/Users/27859/PycharmProjects/select_reliable_predictions/datasets/{dataset}.csv")
+        data = pd.read_csv(f"./datasets/{dataset}.csv")
         Y = data["Y"].to_numpy()
         confidence = data["confidence"].to_numpy()
         Yhat = None

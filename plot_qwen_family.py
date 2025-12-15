@@ -1,93 +1,110 @@
-import pandas as pd
-import numpy as np
-from algorithm.select_alg import selection
-from algorithm.preprocess import get_data
+"""
+Ablation Study Plotting.
+Analyzes the effect of model size and calibration ratio on FDR and Power.
+"""
+
 import argparse
-from plot_utils.plot import plot_results, plot_results_with_budget_save
+import os
+import sys
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--algorithm", default="cbh", choices=["bh", "sbh", "cbh", "quantbh", "integrative"])
-parser.add_argument("--_lambda", type=float, default=0.5)
-parser.add_argument("--k_0", type=int, default=3)
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
 
-parser.add_argument("--datasets", type=str, default="gpt-4-turbo",)
-parser.add_argument("--calib_ratio", type=float, default=0.1, help="Calibration ratio")
-parser.add_argument("--random", default="True", choices=["True", "False"])
-parser.add_argument("--num_trials", type=int, default=10 , help="Number of trials")
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from algorithm.select_alg import selection
+# Assuming plot_utils.plot exists, otherwise we use local plotting
+# from plot_utils.plot import plot_results 
 
-parser.add_argument("--model", default=None, type=str)
-parser.add_argument("--temperature", type=float, default=1, help="Temperature")
-args = parser.parse_args()
+def parse_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--data_dir", type=str, default="./datasets")
+    parser.add_argument("--files", nargs='+', 
+                        default=["Qwen3-8B_medmcqa.csv", "Qwen3-32B_medmcqa.csv"],
+                        help="List of result files to compare")
+    parser.add_argument("--calib_ratios", nargs='+', type=float, 
+                        default=[0.05, 0.1, 0.2], 
+                        help="Calibration ratios to test for each model")
+    parser.add_argument("--num_trials", type=int, default=50)
+    return parser.parse_args()
 
-alpha_list = [0.05, 0.1, 0.15, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+def main():
+    args = parse_args()
+    alpha_list = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5]
+    
+    # To store results for plotting
+    summary = []
 
-dataset = args.datasets
+    for filename in args.files:
+        path = os.path.join(args.data_dir, filename)
+        if not os.path.exists(path):
+            print(f"Skipping {filename}, not found.")
+            continue
+            
+        df = pd.read_csv(path)
+        Y = df["Y"].to_numpy()
+        Yhat = df["Yhat"].to_numpy()
+        confidence = df["confidence"].to_numpy()
+        
+        model_name = filename.split("_")[0] # e.g. Qwen3-8B
 
-if dataset == "vision":
-    ds_list = ["imagenet", "imagenetv2"]
-elif dataset == "text":
-    ds_list = ['stance', 'misinfo', 'bias']
-elif dataset == "all":
-    ds_list = ["imagenet", "imagenetv2", 'stance', 'misinfo', 'bias']
-else:
-    if args.model is not None:
-        ds_list = [args.model + "_" + args.datasets]
-    else:
-        ds_list = [dataset]
+        for ratio in args.calib_ratios:
+            print(f"Processing {model_name} with ratio {ratio}...")
+            
+            fdr_means = []
+            power_means = []
+            
+            # Mock args for selection
+            sel_args = argparse.Namespace()
+            sel_args.random = "True"
+            
+            for alpha in tqdm(alpha_list, leave=False):
+                trial_fdrs = []
+                trial_powers = []
+                
+                for _ in range(args.num_trials):
+                    n_samples = len(Y)
+                    n_calib = int(n_samples * ratio)
+                    cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
+                    
+                    fdp, power, _, _ = selection(
+                        Y, Yhat, confidence, cal_indices, alpha, 
+                        sel_args, calib_ratio=ratio, random=True
+                    )
+                    trial_fdrs.append(fdp)
+                    trial_powers.append(power)
+                
+                fdr_means.append(np.mean(trial_fdrs))
+                power_means.append(np.mean(trial_powers))
+            
+            summary.append({
+                "label": f"{model_name} (r={ratio})",
+                "alpha": alpha_list,
+                "fdr": fdr_means,
+                "power": power_means
+            })
 
-ds_list = ["Qwen3-8B_medmcqa","Qwen3-8B_medmcqa","Qwen3-8B_medmcqa","Qwen3-32B_medmcqa","Qwen3-32B_medmcqa","Qwen3-32B_medmcqa"]
+    # Plotting
+    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(16, 6))
+    
+    ax1.plot(alpha_list, alpha_list, 'k--', label="Target")
+    for item in summary:
+        ax1.plot(item["alpha"], item["fdr"], 'o-', label=item["label"], lw=2)
+    
+    ax1.set_xlabel("Target FDR")
+    ax1.set_ylabel("Realized FDR")
+    ax1.legend()
+    
+    for item in summary:
+        ax2.plot(item["alpha"], item["power"], 'o-', label=item["label"], lw=2)
+        
+    ax2.set_xlabel("Target FDR")
+    ax2.set_ylabel("Power")
+    
+    plt.tight_layout()
+    plt.savefig("ablation_study.pdf")
+    print("Saved ablation_study.pdf")
 
-fdr_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-power_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-std_fdr_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-std_power_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-
-budget_save_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-std_budget_save_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-
-error_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-std_error_array = np.zeros(shape=(len(ds_list), len(alpha_list)))
-
-cal_ratio_list = [0.05, 0.1, 0.2, 0.05, 0.1, 0.2]
-
-
-for i, ds in enumerate(ds_list):
-    Y, Yhat, confidence = get_data(ds)
-    args.calib_ratio = cal_ratio_list[i]
-
-    n = len(Y)
-    for j, alpha in enumerate(alpha_list):
-        num_trials = args.num_trials
-        fdr_list = []
-        power_list = []
-        budget_save_list = []
-        error_list = []
-        for z in range(num_trials):
-            n_samples = len(Y)
-            n_calib = int(n_samples * args.calib_ratio)
-            n_test = n_samples - n_calib
-            cal_indices = np.random.choice(n_samples, size=n_calib, replace=False)
-            fdp, power, selection_size, _ = selection(Y, Yhat, confidence, cal_indices, alpha, calib_ratio=args.calib_ratio, random=(args.random == "True"), args=args)
-            fdr_list.append(fdp)
-            power_list.append(power)
-            budget_save_list.append(selection_size / len(Y))
-            error_list.append(fdp * selection_size / len(Y))
-
-        fdr_array[i,  j] = np.mean(fdr_list)
-        power_array[i, j] = np.mean(power_list)
-        budget_save_array[i, j] = np.mean(budget_save_list)
-        error_array[i, j] = np.mean(error_list)
-        std_fdr_array[i, j] = np.std(fdr_list)
-        std_power_array[i, j] = np.std(power_list)
-        std_budget_save_array[i, j] = np.std(budget_save_list)
-        std_error_array[i, j] = np.std(error_list)
-
-            #print(f"Results of {ds} dataset. q = {args.alpha}")
-            #print(f"Mean FDR: {np.mean(fdr_list)}")
-            #print(f"Mean Power: {np.mean(power_list)}")
-            #print(f"Mean Selection Size: {np.mean(selection_size_list)}")
-
-
-ds_list = ["Qwen3-8B: cal_ratio=0.05", "Qwen3-8B: cal_ratio=0.1", "Qwen3-8B: cal_ratio=0.2", "Qwen3-32B: cal_ratio=0.05", "Qwen3-32B: cal_ratio=0.1", "Qwen3-32B: cal_ratio=0.2"]
-plot_results(models=ds_list, target_fdr_list=np.array([alpha_list for _ in range(len(ds_list))]), fdr_list=fdr_array, power_list=power_array,fdr_std_list=std_fdr_array, power_std_list=std_power_array,)
-#plot_results_with_budget_save(models=ds_list, target_fdr_list=np.array([alpha_list for _ in range(len(ds_list))]), fdr_list=fdr_array, power_list=power_array,fdr_std_list=std_fdr_array, power_std_list=std_power_array, budget_save_list=budget_save_array, budget_save_std_list=std_budget_save_array)
+if __name__ == "__main__":
+    main()
